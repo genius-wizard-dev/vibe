@@ -1,0 +1,35 @@
+{
+  "name": "vibe-coding",
+  "version": "0.1.0",
+  "description": "Bootstrap AI Vibe Coding stack — opencode + codex commands, state management",
+  "type": "module",
+  "bin": {
+    "vibe": "./src/vibe.js"
+  },
+  "files": [
+    "src",
+    "command"
+  ],
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "inquirer": "^9.2.0",
+    "ora": "^8.0.1",
+    "node-fetch": "^3.3.2"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YOUR_USERNAME/vibe-coding"
+  },
+  "keywords": [
+    "vibe-coding",
+    "setup",
+    "AI",
+    "opencode",
+    "codex",
+    "state-management"
+  ]
+}
