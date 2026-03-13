@@ -1,11 +1,10 @@
-```text
+```
 ██╗   ██╗██╗██████╗ ███████╗
 ██║   ██║██║██╔══██╗██╔════╝
 ██║   ██║██║██████╔╝█████╗
 ╚██╗ ██╔╝██║██╔══██╗██╔══╝
  ╚████╔╝ ██║██████╔╝███████╗
   ╚═══╝  ╚═╝╚═════╝ ╚══════╝
-  AI Vibe Coding Bootstrap  v0.1.0
 ```
 
 > Bootstrap AI vibe coding stack - opencode + codex + claude + gemini commands, state management.
