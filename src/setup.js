@@ -113,7 +113,11 @@ function saveLanguageConfig(cwd, location, language, { dryRun }) {
   const localFile = path.join(localDir, "config.json");
   fs.mkdirSync(localDir, { recursive: true });
   const localConfig = { ...readJsonFile(localFile), language };
-  fs.writeFileSync(localFile, `${JSON.stringify(localConfig, null, 2)}\n`, "utf8");
+  fs.writeFileSync(
+    localFile,
+    `${JSON.stringify(localConfig, null, 2)}\n`,
+    "utf8",
+  );
 
   if (location === "global") {
     const globalDir = path.join(os.homedir(), ".config", "vibe");
@@ -130,7 +134,12 @@ function saveLanguageConfig(cwd, location, language, { dryRun }) {
 
 // ─── Install commands ─────────────────────────────────────────────────────────
 
-async function installCommands(runtimes, location, language, { force, dryRun }) {
+async function installCommands(
+  runtimes,
+  location,
+  language,
+  { force, dryRun },
+) {
   if (runtimes.length === 0) return { created: 0, skipped: 0, failed: 0 };
 
   printHeader("Installing Commands");
@@ -178,7 +187,9 @@ export async function runSetup(args) {
     args.includes("--lang") || args.some((a) => a.startsWith("--lang="));
 
   if (requestedLang && !forcedLanguage) {
-    console.error(chalk.red("\n  Invalid language. Use --lang en or --lang vi.\n"));
+    console.error(
+      chalk.red("\n  Invalid language. Use --lang en or --lang vi.\n"),
+    );
     process.exit(1);
   }
 

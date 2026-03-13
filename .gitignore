@@ -1,3 +1,6 @@
 node_modules
 .env
 package-lock.json
+
+# vibe
+.vibe/index.db
