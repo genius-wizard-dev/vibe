@@ -1,0 +1,33 @@
+# CHANGES.LOG
+
+## Status
+- Last updated: 2026-03-14
+- Scope: recent shipped commits + current uncommitted working changes
+
+## Unreleased (working tree)
+- feat(setup): consolidate flow under `vibe setup` (menu + wizard), remove `vibe setting`, and deprecate `vibe init` in favor of `vibe setup`.
+- feat(setup): add AI tool preflight scan (OpenCode, Claude, Gemini, Codex, Kiro) and explicit setup-state hints inside Setup Center.
+- feat(agents): support batch sub-agent creation via `vibe agents create-many` and Setup Center action for fast team bootstrap.
+- feat(conversation): add `vibe convo list`/`--active-only` and `vibe convo monitor` for realtime observation with optional join-as-watcher.
+- ux(conversation): remove hard dependency on resource initialization; convo commands now run with a non-blocking workspace recommendation.
+- refactor(src): reorganize source into domain folders (`src/commands/*`, `src/core/*`, `src/system/*`) and update module naming/import paths.
+- docs: refresh README/CONTRIBUTING structure references and roadmap notes for setup center + non-blocking convo behavior.
+
+## Recent commit history
+- 2026-03-13 47b8dbc Fix/tui (#4)
+- 2026-03-13 47cc8ea fix: enhance confirm prompt to handle non-TTY input and improve key (#3)
+- 2026-03-13 72e7d31 feat: enhance release workflow to detect changes and skip unnecessary releases; add contributor links in release notes (#2)
+- 2026-03-13 30f1176 feat: enhance CI/CD workflows with release notes generation and remove language configuration (#1)
+- 2026-03-13 dcbdf00 feat: implement automated release workflow and update package version to 0.2.2
+- 2026-03-13 f2cbdef feat: add resource status command and enhance setup process
+- 2026-03-13 a0155a9 fix: update package version to 0.2.1; improve setup summary message and add display width functions
+- 2026-03-13 8eebc18 feat: Add language configuration and CLI version command; update package version and improve TUI formatting
+- 2026-03-13 7660e6c feat: Add reference tools for vibe.install and vibe.verify
+- 2026-03-13 0aab914 fix: update npmignore, README, and package version; change index.js permissions
+- 2026-03-13 6bc0dbc feat: add vibe commands for setup, resume, skills, docs, install, detect, and verify
+- 2026-03-13 733e762 feat: rename package to 'vibe-cli' and enhance description; add initial CLI implementation
+- 2026-03-13 99f9df8 style: format code for better readability in setup.js and update .gitignore
+- 2026-03-13 83ccf12 docs: update README header formatting and remove version number
+- 2026-03-13 5e2b7d9 docs: update README to clarify project name and description
+- 2026-03-13 57f585f refactor: rename and update references from 'vibe-coding' to 'vibe'
+- 2026-03-13 cde767a chore: initial commit
