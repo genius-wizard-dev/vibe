@@ -275,13 +275,52 @@ function padDisplay(input, targetWidth) {
   return text + " ".repeat(targetWidth - displayWidth);
 }
 
+function wrapDisplay(input, maxWidth) {
+  const text = String(input ?? "");
+  if (!text) return [""];
+  if (maxWidth <= 0) return [text];
+
+  const lines = [];
+  let line = "";
+  let lineWidth = 0;
+
+  for (const char of text) {
+    const charWidth = getDisplayWidth(char);
+    if (line && lineWidth + charWidth > maxWidth) {
+      lines.push(line);
+      line = "";
+      lineWidth = 0;
+    }
+
+    line += char;
+    lineWidth += charWidth;
+  }
+
+  if (line || lines.length === 0) lines.push(line);
+  return lines;
+}
+
 export function printSummary(lines) {
-  const contentWidth = 44;
+  const minContentWidth = 44;
+  const absoluteMinContentWidth = 20;
+  const framePaddingWidth = 6;
+  const longestLineWidth = lines.reduce(
+    (max, line) => Math.max(max, getDisplayWidth(line)),
+    0,
+  );
+  const terminalColumns = Number(process.stdout.columns) || 0;
+  const maxContentWidth =
+    terminalColumns > 0
+      ? Math.max(absoluteMinContentWidth, terminalColumns - framePaddingWidth)
+      : Math.max(minContentWidth, longestLineWidth);
+  const preferredContentWidth = Math.max(minContentWidth, longestLineWidth);
+  const contentWidth = Math.min(preferredContentWidth, maxContentWidth);
+  const wrappedLines = lines.flatMap((line) => wrapDisplay(line, contentWidth));
   const frameWidth = contentWidth + 2;
 
   console.log();
   console.log(chalk.cyan("  ╔" + "═".repeat(frameWidth) + "╗"));
-  lines.forEach((l) => {
+  wrappedLines.forEach((l) => {
     const padded = padDisplay(l, contentWidth);
     console.log(chalk.cyan("  ║") + ` ${padded} ` + chalk.cyan("║"));
   });
