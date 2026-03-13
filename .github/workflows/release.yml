@@ -97,6 +97,19 @@ jobs:
           git tag "${{ steps.pkg.outputs.tag }}"
           git push origin "${{ steps.pkg.outputs.tag }}"
 
+      - name: Generate release notes
+        id: notes
+        run: |
+          PREV_TAG="$(git tag --sort=-creatordate | grep -E '^v[0-9]' | head -n 1 || true)"
+          if [ "$PREV_TAG" = "${{ steps.pkg.outputs.tag }}" ]; then
+            PREV_TAG="$(git tag --sort=-creatordate | grep -E '^v[0-9]' | sed -n '2p' || true)"
+          fi
+          node scripts/generate-release-notes.mjs \
+            --version "${{ steps.pkg.outputs.version }}" \
+            --tag "${{ steps.pkg.outputs.tag }}" \
+            --prev-tag "$PREV_TAG" \
+            --output RELEASE_NOTES.md
+
       - name: Check release existence
         id: release_check
         env:
@@ -118,4 +131,13 @@ jobs:
           gh release create "${{ steps.pkg.outputs.tag }}" \
             --repo "genius-wizard-dev/vibe" \
             --title "${{ steps.pkg.outputs.tag }}" \
-            --generate-notes
+            --notes-file RELEASE_NOTES.md
+
+      - name: Upload changelog asset
+        if: steps.release_check.outputs.exists != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${{ steps.pkg.outputs.tag }}" RELEASE_NOTES.md \
+            --repo "genius-wizard-dev/vibe" \
+            --clobber

@@ -8,7 +8,6 @@ import {
   getPackManifest,
   getPromptFiles,
   PACKS,
-  resolvePackLanguage,
   resolvePromptLanguage,
   RUNTIMES,
 } from "./registry.js";
@@ -110,23 +109,10 @@ const SETUP_MODE_LABELS = {
 
 const LANGUAGE_LABELS = {
   en: "English",
-  vi: "Tiếng Việt",
 };
 
-function parseLanguageArg(args) {
-  const fromEq = args.find((a) => a.startsWith("--lang="));
-  if (fromEq) {
-    const lang = fromEq.split("=")[1]?.toLowerCase();
-    if (lang === "en" || lang === "vi") return lang;
-  }
-
-  const idx = args.indexOf("--lang");
-  if (idx !== -1) {
-    const lang = args[idx + 1]?.toLowerCase();
-    if (lang === "en" || lang === "vi") return lang;
-  }
-
-  return null;
+function hasLanguageArg(args) {
+  return args.includes("--lang") || args.some((a) => a.startsWith("--lang="));
 }
 
 function readJsonFile(filePath) {
@@ -136,20 +122,6 @@ function readJsonFile(filePath) {
   } catch {
     return {};
   }
-}
-
-function getSavedLanguage(cwd) {
-  const local = readJsonFile(path.join(cwd, ".vibe", "config.json"));
-  if (local.language === "en" || local.language === "vi") return local.language;
-
-  const globalVibe = readJsonFile(
-    path.join(os.homedir(), ".config", "vibe", "config.json"),
-  );
-  if (globalVibe.language === "en" || globalVibe.language === "vi") {
-    return globalVibe.language;
-  }
-
-  return "en";
 }
 
 function getSavedSetupMode(cwd) {
@@ -539,18 +511,18 @@ export async function runSetup(args) {
   const forcedRuntimes = parseRuntimeArgs(args);
   const forcedPacks = parsePackArgs(args);
   const forcedLocation = parseLocationArg(args);
-  const forcedLanguage = parseLanguageArg(args);
-  const requestedLang =
-    args.includes("--lang") || args.some((a) => a.startsWith("--lang="));
+  const requestedLang = hasLanguageArg(args);
   const requestedPacks =
     args.includes("--packs") || args.some((a) => a.startsWith("--packs="));
   const hasSymlinkFlag = args.includes("--symlink");
   const hasLocalFilesFlag =
     args.includes("--local-files") || args.includes("--copy");
 
-  if (requestedLang && !forcedLanguage) {
+  if (requestedLang) {
     console.error(
-      chalk.red("\n  Invalid language. Use --lang en or --lang vi.\n"),
+      chalk.red(
+        "\n  Language selection was removed. English is now the default.\n",
+      ),
     );
     process.exit(1);
   }
@@ -584,7 +556,6 @@ export async function runSetup(args) {
     process.exit(0);
   }
 
-  const savedLanguage = getSavedLanguage(cwd);
   const savedSetupMode = getSavedSetupMode(cwd);
   const detected = detectRuntimes();
   const initialRuntimeSelection = [
@@ -609,7 +580,7 @@ export async function runSetup(args) {
   }));
 
   let packs = forcedPacks.length > 0 ? [...forcedPacks] : [];
-  let requestedLanguage = forcedLanguage || savedLanguage;
+  const language = "en";
   let runtimes = forcedRuntimes.length > 0 ? [...forcedRuntimes] : [];
   let location = forcedLocation || null;
   let installMode = forcedInstallMode || null;
@@ -621,7 +592,7 @@ export async function runSetup(args) {
       if (forcedPacks.length > 0) return "next";
 
       const selectedPacks = await multiSelect({
-        title: "Step 1/6 — Which command packs should be installed?",
+        title: "Step 1/5 — Which command packs should be installed?",
         options: packOptions,
         initial: packs,
       });
@@ -636,37 +607,10 @@ export async function runSetup(args) {
     },
 
     async () => {
-      if (forcedLanguage) return "next";
-
-      const selectedLanguage = await singleSelect({
-        title: "Step 2/6 — Preferred language?",
-        subtitle: "Used for command content and future updates",
-        options: [
-          {
-            value: "en",
-            label: "English  (recommended)",
-            desc: "All current packs are fully available in English",
-          },
-          {
-            value: "vi",
-            label: "Tiếng Việt",
-            desc: "Some packs may fallback to English",
-          },
-        ],
-        initial: requestedLanguage === "vi" ? 1 : 0,
-        allowBack: true,
-      });
-
-      if (selectedLanguage === BACK_ACTION) return "back";
-      requestedLanguage = selectedLanguage;
-      return "next";
-    },
-
-    async () => {
       if (forcedRuntimes.length > 0) return "next";
 
       const selectedRuntimes = await multiSelect({
-        title: "Step 3/6 — Which AI tools are you using?",
+        title: "Step 2/5 — Which AI tools are you using?",
         options: runtimeOptions,
         initial: runtimes.length > 0 ? runtimes : initialRuntimeSelection,
         allowBack: true,
@@ -686,7 +630,7 @@ export async function runSetup(args) {
       if (forcedLocation) return "next";
 
       const selectedLocation = await singleSelect({
-        title: "Step 4/6 — Install where?",
+        title: "Step 3/5 — Install where?",
         subtitle: "Local = current project only   |   Global = all projects",
         options: [
           {
@@ -713,7 +657,7 @@ export async function runSetup(args) {
       if (forcedInstallMode) return "next";
 
       const selectedInstallMode = await singleSelect({
-        title: "Step 5/6 — Install mode?",
+        title: "Step 4/5 — Install mode?",
         subtitle:
           "Symlink stores files once in .vibe/commands and links runtime folders",
         options: [
@@ -741,7 +685,7 @@ export async function runSetup(args) {
       if (forcedConflictPolicy) return "next";
 
       const selectedConflictPolicy = await singleSelect({
-        title: "Step 6/6 — Existing file policy?",
+        title: "Step 5/5 — Existing file policy?",
         subtitle: "Choose what to do when command files already exist",
         options: [
           {
@@ -779,21 +723,6 @@ export async function runSetup(args) {
     }
 
     stepIndex += 1;
-  }
-
-  const languageResolution = resolvePackLanguage(requestedLanguage, packs);
-  const language = languageResolution.language;
-
-  if (languageResolution.fallback) {
-    const unsupportedLabels = languageResolution.unsupported
-      .map((pack) => PACKS[pack]?.label || pack)
-      .join(", ");
-    console.log(
-      chalk.yellow(
-        `\n  Language '${requestedLanguage}' is not available for: ${unsupportedLabels}.`,
-      ),
-    );
-    console.log(chalk.yellow("  Falling back to English.\n"));
   }
 
   force = conflictPolicy === "replace";

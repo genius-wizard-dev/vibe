@@ -3,7 +3,6 @@
 # VIBE
 
 **A lightweight, open-source workflow CLI for AI-assisted research, design, and implementation handoff.**
-
 **Install once, run across OpenCode, Claude Code, Gemini CLI, Codex, Cursor, Windsurf, Qwen, and Continue.**
 
 [![npm version](https://img.shields.io/npm/v/ai-vibe?style=for-the-badge&logo=npm&logoColor=white&color=CB3837)](https://www.npmjs.com/package/ai-vibe)
@@ -176,9 +175,7 @@ vibe setup --keep
 vibe setup --force
 vibe setup --dry-run
 
-# language and scope
-vibe setup --lang en
-vibe setup --lang vi
+# scope
 vibe setup --local
 vibe setup --global
 
@@ -203,7 +200,9 @@ On push to `main`, release workflow does:
 3. Read `name` and `version` from `package.json`
 4. Publish to npm if version does not exist
 5. Create git tag `v<version>` if missing
-6. Create GitHub Release if missing
+6. Generate changelog notes from commits + changed files
+7. Create GitHub Release if missing
+8. Upload `RELEASE_NOTES.md` as release asset
 
 ### Required secret
 
@@ -217,6 +216,14 @@ Add `NPM_TOKEN` in GitHub repo settings:
    - Value: your npm automation token
 
 See `RELEASING.md` for full details and troubleshooting.
+
+### Recommended contributor release branch flow
+
+1. Create `release/vX.Y.Z` from `main`
+2. Merge contributor PRs into that release branch
+3. Bump version in `package.json`
+4. Merge `release/vX.Y.Z` into `main`
+5. CI/CD auto-publishes npm + creates GitHub Release with changelog notes
 
 ## Open-source Docs
 

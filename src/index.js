@@ -53,7 +53,6 @@ const HELP = `
     --symlink / --local-files
     --force / --keep
     --local / --global
-    --lang en|vi
     --yes (for non-interactive remove)
 
   Runtime aliases:
