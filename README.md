@@ -1,5 +1,3 @@
-# vibe
-
 ```text
 ██╗   ██╗██╗██████╗ ███████╗
 ██║   ██║██║██╔══██╗██╔════╝
@@ -7,10 +5,10 @@
 ╚██╗ ██╔╝██║██╔══██╗██╔══╝
  ╚████╔╝ ██║██████╔╝███████╗
   ╚═══╝  ╚═╝╚═════╝ ╚══════╝
-  AI vibe Bootstrap  v0.1.0
+  AI Vibe Coding Bootstrap  v0.1.0
 ```
 
-> Bootstrap AI vibe stack - opencode + codex + claude + gemini commands, state management.
+> Bootstrap AI vibe coding stack - opencode + codex + claude + gemini commands, state management.
 
 ```bash
 # run directly from GitHub (recommended)
