@@ -3,7 +3,8 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import { fetchMany } from "./fetch.js";
-import { COMMANDS, RUNTIMES } from "./registry.js";
+import { COMMANDS, COMMAND_FILES, RUNTIMES } from "./registry.js";
+import { parseRuntimeArgs } from "./runtime-args.js";
 import {
   confirm,
   multiSelect,
@@ -29,26 +30,7 @@ function detectRuntimes() {
   });
 }
 
-const RUNTIME_ARG_MAP = {
-  "--opencode": "opencode",
-  "--claude": "claude",
-  "--gemini": "gemini",
-  "--codex": "codex",
-  // backward-compat aliases
-  "--opencode-only": "opencode",
-  "--claude-only": "claude",
-  "--gemini-only": "gemini",
-  "--codex-only": "codex",
-};
-
-function parseRuntimeArgs(args) {
-  const selected = [];
-  for (const arg of args) {
-    const runtime = RUNTIME_ARG_MAP[arg];
-    if (runtime) selected.push(runtime);
-  }
-  return [...new Set(selected)];
-}
+const RECOMMENDED_RUNTIMES = ["opencode", "codex"];
 
 function parseLocationArg(args) {
   const hasLocal = args.includes("--local");
@@ -140,10 +122,27 @@ async function installCommands(
   language,
   { force, dryRun },
 ) {
-  if (runtimes.length === 0) return { created: 0, skipped: 0, failed: 0 };
+  if (runtimes.length === 0) {
+    return {
+      commands: { created: 0, skipped: 0, failed: 0 },
+      references: { created: 0, skipped: 0, failed: 0 },
+    };
+  }
 
   printHeader("Installing Commands");
-  const results = { created: 0, skipped: 0, failed: 0 };
+  const results = {
+    commands: { created: 0, skipped: 0, failed: 0 },
+    references: { created: 0, skipped: 0, failed: 0 },
+  };
+  const referenceFiles = COMMAND_FILES.filter((file) =>
+    file.startsWith("reference/"),
+  );
+
+  const updateCounts = (bucket, status) => {
+    if (status === "failed") bucket.failed++;
+    else if (status === "skipped") bucket.skipped++;
+    else bucket.created++;
+  };
 
   for (const runtime of runtimes) {
     const rt = RUNTIMES[runtime];
@@ -153,12 +152,12 @@ async function installCommands(
     console.log(
       chalk.dim(`\n  📁 [${rt.label}]  ${dir.replace(os.homedir(), "~")}/`),
     );
-    const items = COMMANDS.map((cmd) => ({
+    const commandItems = COMMANDS.map((cmd) => ({
       remote: `commands/${language}/${cmd}.md`,
       local: path.join(dir, `${cmd}.md`),
     }));
-    const res = await fetchMany(items, { force, dryRun });
-    res.forEach((r, i) => {
+    const commandResults = await fetchMany(commandItems, { force, dryRun });
+    commandResults.forEach((r, i) => {
       const s =
         r.status === "failed"
           ? "fail"
@@ -166,10 +165,33 @@ async function installCommands(
             ? "skip"
             : "done";
       printStep(COMMANDS[i], s);
-      if (r.status === "failed") results.failed++;
-      else if (r.status === "skipped") results.skipped++;
-      else results.created++;
+      updateCounts(results.commands, r.status);
     });
+
+    if (referenceFiles.length > 0) {
+      const referenceItems = referenceFiles.map((file) => ({
+        remote: `commands/${language}/${file}`,
+        local: path.join(dir, file),
+      }));
+      const referenceResults = await fetchMany(referenceItems, { force, dryRun });
+      referenceResults.forEach((r) => updateCounts(results.references, r.status));
+
+      const changed = referenceResults.filter(
+        (r) => r.status !== "failed" && r.status !== "skipped",
+      ).length;
+      const unchanged = referenceResults.filter((r) => r.status === "skipped").length;
+      const failed = referenceResults.filter((r) => r.status === "failed").length;
+      const detail = [
+        changed > 0 ? `${changed} synced` : null,
+        unchanged > 0 ? `${unchanged} unchanged` : null,
+        failed > 0 ? `${failed} failed` : null,
+      ]
+        .filter(Boolean)
+        .join(" · ");
+
+      const refStatus = failed > 0 ? "fail" : changed > 0 ? "done" : "skip";
+      printStep("reference/*", refStatus, detail);
+    }
   }
   return results;
 }
@@ -229,6 +251,12 @@ export async function runSetup(args) {
 
   // ── Step 2: Runtimes ──────────────────────────────────────────────────────
   const detected = detectRuntimes();
+  const initialRuntimeSelection = [
+    ...new Set([
+      ...RECOMMENDED_RUNTIMES.filter((r) => RUNTIMES[r]),
+      ...detected,
+    ]),
+  ];
   const runtimes =
     forcedRuntimes.length > 0
       ? forcedRuntimes
@@ -236,10 +264,12 @@ export async function runSetup(args) {
           title: "Step 2/3 — Which AI tools are you using?",
           options: Object.entries(RUNTIMES).map(([value, rt]) => ({
             value,
-            label: rt.label,
+            label: RECOMMENDED_RUNTIMES.includes(value)
+              ? `${rt.label}  (recommended)`
+              : rt.label,
             desc: rt.note,
           })),
-          required: detected,
+          initial: initialRuntimeSelection,
         });
 
   if (forcedRuntimes.length > 0) {
@@ -300,11 +330,12 @@ export async function runSetup(args) {
   }
 
   // ── Summary ───────────────────────────────────────────────────────────────
-  const totalFail = cmdResults.failed;
+  const totalFail = cmdResults.commands.failed + cmdResults.references.failed;
   printSummary([
     totalFail ? "⚠  Setup done (with errors)" : "✅  vibe setup complete!",
     "",
-    `   Commands  ${cmdResults.created} installed`,
+    `   Commands  ${cmdResults.commands.created} installed`,
+    `   Refs      ${cmdResults.references.created} synced`,
     `   Language  ${LANGUAGE_LABELS[language]}`,
     `   Location  ${location}`,
     "",

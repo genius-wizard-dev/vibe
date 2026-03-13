@@ -24,13 +24,18 @@ const HELP = `
     vibe update          Re-sync all files from GitHub
 
   Options:
-    --opencode --claude --gemini --codex
+    --opencode --claude --gemini --codex --cursor --windsurf --qwen --continue
+    --all / --all-tools / --all-runtimes
     --local / --global
     --lang en|vi
     --yes (for non-interactive remove)
 
+  Runtime aliases:
+    --open-code --opencode-cli --claude-code --gemini-cli --codex-cli
+    --cursor-ide --windsurf-ide --qwen-code --continue-dev
+
   After setup:
-    Open opencode/codex and run /vibe.setup
+    Open your AI tool and run /vibe.setup
     Check progress anytime with /vibe.resume
 `;
 

@@ -1,7 +1,7 @@
 {
   "name": "ai-vibe",
-  "version": "0.1.3",
-  "description": "Bootstrap AI vibe coding stack — opencode + codex commands, state management",
+  "version": "0.1.5",
+  "description": "Bootstrap AI vibe coding stack — multi-tool commands and state management",
   "type": "module",
   "bin": {
     "vibe": "./src/index.js"
@@ -30,6 +30,12 @@
     "AI",
     "opencode",
     "codex",
+    "claude",
+    "gemini",
+    "cursor",
+    "windsurf",
+    "qwen",
+    "continue",
     "state-management"
   ]
 }

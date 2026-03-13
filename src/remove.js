@@ -3,30 +3,11 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import { RUNTIMES } from "./registry.js";
+import { parseRuntimeArgs } from "./runtime-args.js";
 import { confirm, multiSelect, printHeader, printStep, VIBE_ART } from "./tui.js";
 
 function expandHome(p) {
   return p?.startsWith("~") ? path.join(os.homedir(), p.slice(1)) : p;
-}
-
-const RUNTIME_ARG_MAP = {
-  "--opencode": "opencode",
-  "--claude": "claude",
-  "--gemini": "gemini",
-  "--codex": "codex",
-  "--opencode-only": "opencode",
-  "--claude-only": "claude",
-  "--gemini-only": "gemini",
-  "--codex-only": "codex",
-};
-
-function parseRuntimeArgs(args) {
-  const selected = [];
-  for (const arg of args) {
-    const runtime = RUNTIME_ARG_MAP[arg];
-    if (runtime) selected.push(runtime);
-  }
-  return [...new Set(selected)];
 }
 
 function parseScopes(args) {
@@ -55,9 +36,17 @@ function collectTargets(cwd, runtimes, scopes) {
             : null;
       if (!dir || !fs.existsSync(dir)) continue;
 
-      const files = fs
+      const rootFiles = fs
         .readdirSync(dir)
         .filter((f) => f.startsWith("vibe.") && f.endsWith(".md"));
+      const referenceDir = path.join(dir, "reference");
+      const referenceFiles = fs.existsSync(referenceDir)
+        ? fs
+            .readdirSync(referenceDir)
+            .filter((f) => f.startsWith("vibe.") && f.endsWith(".md"))
+            .map((f) => path.join("reference", f))
+        : [];
+      const files = [...rootFiles, ...referenceFiles];
       if (files.length === 0) continue;
 
       targets.push({
@@ -65,6 +54,7 @@ function collectTargets(cwd, runtimes, scopes) {
         runtime,
         scope,
         dir,
+        referenceDir,
         files,
       });
     }
@@ -150,6 +140,18 @@ export async function runRemove(args) {
     }
 
     if (!dryRun) {
+      try {
+        if (
+          target.referenceDir &&
+          fs.existsSync(target.referenceDir) &&
+          fs.readdirSync(target.referenceDir).length === 0
+        ) {
+          fs.rmdirSync(target.referenceDir);
+        }
+      } catch {
+        // ignore cleanup errors
+      }
+
       try {
         if (fs.readdirSync(target.dir).length === 0) fs.rmdirSync(target.dir);
       } catch {

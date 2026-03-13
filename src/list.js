@@ -33,7 +33,13 @@ export async function runList() {
       const files = fs
         .readdirSync(location.dir)
         .filter((f) => f.endsWith(".md") && f.startsWith("vibe."));
-      if (files.length === 0) continue;
+      const referenceDir = path.join(location.dir, "reference");
+      const referenceFiles = fs.existsSync(referenceDir)
+        ? fs
+            .readdirSync(referenceDir)
+            .filter((f) => f.endsWith(".md") && f.startsWith("vibe."))
+        : [];
+      if (files.length === 0 && referenceFiles.length === 0) continue;
 
       const shortDir = location.dir.replace(os.homedir(), "~");
       console.log(
@@ -43,6 +49,9 @@ export async function runList() {
         const name = f.replace(".md", "");
         console.log(`    ${chalk.white("/" + name)}`);
       });
+      if (referenceFiles.length > 0) {
+        console.log(chalk.dim(`    reference/ (${referenceFiles.length} files)`));
+      }
       console.log();
     }
   }

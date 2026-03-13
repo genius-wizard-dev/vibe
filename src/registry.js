@@ -111,6 +111,38 @@ export const RUNTIMES = {
     verify: "/vibe.setup",
     note: "Commands use / prefix",
   },
+  cursor: {
+    label: "Cursor",
+    localDir: ".cursor/commands",
+    globalDir: "~/.cursor/commands",
+    prefix: "/",
+    verify: "/vibe.setup",
+    note: "Commands use / prefix",
+  },
+  windsurf: {
+    label: "Windsurf",
+    localDir: ".windsurf/commands",
+    globalDir: "~/.windsurf/commands",
+    prefix: "/",
+    verify: "/vibe.setup",
+    note: "Commands use / prefix",
+  },
+  qwen: {
+    label: "Qwen Code",
+    localDir: ".qwen/commands",
+    globalDir: "~/.qwen/commands",
+    prefix: "/",
+    verify: "/vibe.setup",
+    note: "Commands use / prefix",
+  },
+  continue: {
+    label: "Continue",
+    localDir: ".continue/prompts",
+    globalDir: "~/.continue/prompts",
+    prefix: "/",
+    verify: "/vibe.setup",
+    note: "Prompts use / prefix",
+  },
 };
 
 // Command files — fetched from GitHub → injected into runtime command dirs
@@ -122,4 +154,15 @@ export const COMMANDS = [
   "vibe.docs",
   "vibe.skills",
   "vibe.verify",
+];
+
+// Extra markdown assets used by command files (kept in subfolders)
+export const REFERENCE_FILES = [
+  "reference/vibe.install.tools.md",
+  "reference/vibe.verify.tools.md",
+];
+
+export const COMMAND_FILES = [
+  ...COMMANDS.map((cmd) => `${cmd}.md`),
+  ...REFERENCE_FILES,
 ];

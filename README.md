@@ -7,7 +7,7 @@
   ╚═══╝  ╚═╝╚═════╝ ╚══════╝
 ```
 
-> Bootstrap AI vibe coding stack - opencode + codex + claude + gemini commands, state management.
+> Bootstrap AI vibe coding stack - opencode + codex + claude + gemini + cursor + windsurf + qwen + continue commands, state management.
 
 ```bash
 # run directly from GitHub (recommended)
@@ -65,9 +65,11 @@ vibe setup --force      # Re-download + overwrite
 vibe setup --dry-run    # Preview without writing
 vibe setup --offline    # Skip network (use cached)
 vibe setup --lang en    # Set preferred language (en/vi)
+vibe setup --all        # Target all supported runtimes
 
 # Target specific runtime
 vibe setup --opencode --codex
+vibe setup --cursor --windsurf
 vibe setup --global     # Recommended: install once for all projects
 
 # After setup
@@ -76,9 +78,20 @@ vibe update             # Re-sync all files from GitHub
 vibe remove             # Remove installed vibe command files
 ```
 
+Runtime flag guide (tool -> flag):
+
+- OpenCode -> `--opencode` (`--open-code`, `--opencode-cli`)
+- Claude Code -> `--claude` (`--claude-code`)
+- Gemini CLI -> `--gemini` (`--gemini-cli`)
+- Codex CLI -> `--codex` (`--codex-cli`)
+- Cursor -> `--cursor` (`--cursor-ide`)
+- Windsurf -> `--windsurf` (`--windsurf-ide`)
+- Qwen Code -> `--qwen` (`--qwen-code`)
+- Continue -> `--continue` (`--continue-dev`)
+
 ## After Setup
 
-Open your agent (opencode/codex) in the project and run:
+Open your AI tool in the project and run:
 
 ```
 /vibe.setup     ← Start or resume bootstrap

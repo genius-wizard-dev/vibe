@@ -62,10 +62,14 @@ export async function multiSelect({
     });
 
     console.log();
-    const count = selected.size - required.length;
-    console.log(
-      chalk.dim(`  ${count} selected (+ ${required.length} required)`),
-    );
+    if (required.length > 0) {
+      const count = selected.size - required.length;
+      console.log(
+        chalk.dim(`  ${count} selected (+ ${required.length} required)`),
+      );
+    } else {
+      console.log(chalk.dim(`  ${selected.size} selected`));
+    }
   };
 
   render();
