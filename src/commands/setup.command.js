@@ -669,10 +669,24 @@ export async function runSetupWizard(args) {
     console.log(chalk.dim("  Auto-confirm enabled (--yes)\n"));
   }
 
-  const toolDetectedRuntimes = installedTools
+  const detectedRuntimeIds = installedTools
     .map((tool) => TOOL_RUNTIME_MAP[tool.id])
     .filter((runtime) => Boolean(runtime) && Boolean(RUNTIMES[runtime]));
-  const selectableRuntimeIds = [...new Set(toolDetectedRuntimes)];
+  const selectableRuntimeIds = [...new Set(detectedRuntimeIds)];
+  const setupRuntimeIds = [
+    ...new Set(
+      Object.values(TOOL_RUNTIME_MAP).filter((runtime) => Boolean(RUNTIMES[runtime])),
+    ),
+  ];
+  const toolStatusByRuntime = new Map(
+    detectedTools
+      .map((tool) => {
+        const runtime = TOOL_RUNTIME_MAP[tool.id];
+        if (!runtime || !RUNTIMES[runtime]) return null;
+        return [runtime, tool];
+      })
+      .filter(Boolean),
+  );
 
   const savedSetupMode = getSavedSetupMode(cwd);
   const savedConfig = readJsonFile(path.join(cwd, ".vibe", "config.json"));
@@ -702,14 +716,18 @@ export async function runSetupWizard(args) {
     desc: PACKS[pack].note,
   }));
 
-  const runtimeOptions = selectableRuntimeIds.map((value) => {
+  const runtimeOptions = setupRuntimeIds.map((value) => {
     const rt = RUNTIMES[value];
+    const toolStatus = toolStatusByRuntime.get(value);
+    const detectNote = toolStatus?.installed
+      ? `detected: ${toolStatus.detectedCommand}`
+      : "not detected yet";
     return {
       value,
       label: RECOMMENDED_RUNTIMES.includes(value)
         ? `${rt.label}  (recommended)`
         : rt.label,
-      desc: rt.note,
+      desc: `${rt.note} · ${detectNote}`,
     };
   });
 
@@ -754,7 +772,7 @@ export async function runSetupWizard(args) {
       if (forcedRuntimes.length > 0) return "next";
 
       const selectedRuntimes = await multiSelect({
-        title: "Step 2/5 — Which detected AI tools are you using?",
+        title: "Step 2/5 — Which AI tools should receive commands?",
         options: runtimeOptions,
         initial: runtimes.length > 0 ? runtimes : initialRuntimeSelection,
         allowBack: true,
