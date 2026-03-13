@@ -13,8 +13,10 @@
 # run directly from GitHub (recommended)
 npm exec --yes --package=github:genius-wizard-dev/vibe -- vibe setup
 
-# if published to npm
-npx vibe setup
+# if published to npm (package: ai-vibe, executable: vibe)
+npm exec --yes --package=ai-vibe -- vibe setup
+# or
+npx --yes --package=ai-vibe vibe setup
 ```
 
 ---
@@ -34,7 +36,7 @@ CLI downloads command files **at runtime from GitHub** — no rebuild needed whe
 ```
 vibe/
 ├── src/
-│   ├── vibe.js              ← CLI entry point
+│   ├── index.js             ← CLI entry point
 │   ├── registry.js          ← All remote paths defined here
 │   ├── setup.js             ← TUI setup wizard
 │   ├── fetch.js             ← GitHub fetcher
@@ -54,6 +56,9 @@ vibe/
 ```bash
 # Interactive TUI setup (recommended)
 npm exec --yes --package=github:genius-wizard-dev/vibe -- vibe setup
+
+# If installed from npm without global install
+npm exec --yes --package=ai-vibe -- vibe setup
 
 # Options
 vibe setup --force      # Re-download + overwrite
@@ -94,6 +99,23 @@ Users get updates via:
 vibe update
 # or
 npm exec --yes --package=github:genius-wizard-dev/vibe -- vibe setup --force
+```
+
+---
+
+## Troubleshooting
+
+`sh: vibe: command not found`
+
+This usually happens when running `npx ai-vibe setup`.
+`ai-vibe` is the npm package name, but the CLI executable is `vibe`.
+
+Use one of these instead:
+
+```bash
+npm exec --yes --package=ai-vibe -- vibe setup
+# or
+npx --yes --package=ai-vibe vibe setup
 ```
 
 ---
