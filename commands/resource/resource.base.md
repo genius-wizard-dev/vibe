@@ -17,12 +17,18 @@ Guard:
 - require `[SKILL_FIND] status: done`
 - require both overview files to exist
 - if any overview/output missing: trigger research/design creation before scaffolding
+- read `codebase_state` and `base_strategy` from `.vibe/resource/state.md` when available
 
 ## Step 1: Detect Target Stack
 
 Infer target stack from research + design + user constraints.
 
 If ambiguous, ask one focused question and proceed.
+
+Also detect base action strategy:
+
+- `refine-only` (default when existing codebase)
+- `scaffold` (for empty/new repos or explicit user request)
 
 ## Step 2: Build Base Blueprint
 
@@ -35,13 +41,27 @@ Generate `.vibe/resource/base-blueprint.md` with:
 - env/config strategy
 - docs and onboarding files
 
+If strategy is `refine-only`, blueprint must include:
+
+- current folder map snapshot
+- keep-as-is modules
+- optional improvements (proposal only)
+- minimal safe additions from research/design context
+
 ## Step 3: Scaffold Source Base
 
 Rules:
 
-- if repository is empty -> create full base
-- if repository exists -> merge safely, no destructive overwrite
+- if strategy is `scaffold` and repository is empty -> create full base
+- if strategy is `refine-only` and repository exists -> do not recreate base folders
+- for existing repositories, merge safely with no destructive overwrite
 - keep structure deterministic and minimal
+
+For existing repositories (`refine-only`):
+
+- do not move/rename major directories automatically
+- do not replace framework bootstraps already in use
+- prefer adapters, docs, and context bridges over structural rewrites
 
 Language-aware behavior examples:
 
@@ -65,6 +85,7 @@ Set:
 ## [BASE] status: done
 base_path: {repo root}
 base_stack: {detected stack}
+base_strategy: {refine-only | scaffold}
 ```
 
 Append a delta log entry to `CHANGE_LOGS.md` (project root).

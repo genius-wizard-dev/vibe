@@ -5,6 +5,18 @@ description: Orchestrate reusable topic-based research flow under .vibe/research
 
 Research is repeatable per topic. Use folders, not one global state file.
 
+## Interaction Contract (Mandatory)
+
+Do not jump straight to conclusions when intent is ambiguous.
+
+- Ask focused clarification questions before final recommendations.
+- Wait for user answers before continuing to next uncertain step.
+- If assumptions are required, label them explicitly as `assumption` in `interview.md` and `analysis.md`.
+- Before `/research.export`, confirm a short recap with user:
+  - problem framing
+  - selected direction
+  - open risks
+
 Always read:
 
 - `.vibe/research/overview.md`
@@ -60,9 +72,16 @@ Read `.vibe/research/<research>/state.md` and run next unfinished step:
 
 After each step, run `/research.log`.
 
+During interview/discuss steps:
+
+- ask in small batches (1-3 questions per turn)
+- prioritize blockers first (scope, constraints, success criteria)
+- avoid filling missing answers from guesswork
+
 If resource mode is `fastsetup`, compress steps into one pass:
 
 - ask the 10 baseline questions
+- still wait for answers; do not auto-answer on behalf of user
 - write brief, interview, and analysis in one compact run
 - continue to `/research.export`
 

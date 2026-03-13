@@ -11,6 +11,13 @@ Read:
 
 Use `reference/research.interview.gsd.md`.
 
+Interview must be interactive:
+
+- ask user questions directly (do not fabricate answers)
+- ask follow-up when answers are vague or conflicting
+- ask at most 3 questions per turn, then wait for reply
+- after each reply batch, restate understanding in 2-4 bullets for confirmation
+
 Capture answers in `.vibe/research/<research>/interview.md` using sections:
 
 - problem
@@ -19,6 +26,11 @@ Capture answers in `.vibe/research/<research>/interview.md` using sections:
 - tech preferences
 - constraints
 - risks
+
+Also include:
+
+- assumptions (only when user did not provide data)
+- unresolved questions (to carry into `/research.discuss`)
 
 Update topic `state.md`:
 

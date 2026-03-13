@@ -14,6 +14,12 @@ Require:
 - `mcp: done`
 - `review: done`
 
+Before writing export, ask user to confirm a short final recap:
+
+- selected architecture direction
+- accepted trade-offs
+- known risks to carry into implementation
+
 Write:
 
 - `.vibe/design/<design>/output.md`

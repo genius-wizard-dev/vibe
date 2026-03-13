@@ -11,9 +11,10 @@ Rules:
 
 1. Ensure `.vibe/research/overview.md` and active topic exist.
 2. If missing, create topic via research.new flow.
-3. In fastsetup mode, ask the 10 GSD baseline questions.
-4. Produce concise outputs in `brief.md`, `analysis.md`, and `output.md`.
-5. Log changes in topic `logs.md` and update overview.
+3. Ask clarifying questions first when intent is ambiguous; do not guess missing requirements.
+4. In fastsetup mode, ask the 10 GSD baseline questions and wait for user answers.
+5. Produce concise outputs in `brief.md`, `analysis.md`, and `output.md`.
+6. Log changes in topic `logs.md` and update overview.
 
 Deliverables:
 

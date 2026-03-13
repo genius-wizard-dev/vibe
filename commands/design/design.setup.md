@@ -3,6 +3,18 @@ name: design.setup
 description: Orchestrate topic-based design flow under .vibe/design/<design>/ from research outputs.
 ---
 
+## Interaction Contract (Mandatory)
+
+Do not finalize architecture when requirements are still ambiguous.
+
+- Ask focused clarification questions before proposing final design choices.
+- Wait for user answers before advancing uncertain steps.
+- If assumptions are required, label them explicitly as `assumption` in `architecture.md` and `review.md`.
+- Before `/design.export`, confirm a short recap with user:
+  - scope boundaries
+  - chosen architecture direction
+  - unresolved risks or trade-offs
+
 Always read:
 
 - `.vibe/design/overview.md`
@@ -54,6 +66,12 @@ Read `.vibe/design/<design>/state.md` and run next unfinished step:
 4. `/design.export`
 
 After each step run `/design.log`.
+
+During arch/review steps:
+
+- ask in small batches (1-3 questions per turn)
+- prioritize blockers first (scope, constraints, success criteria)
+- avoid filling gaps from guesswork
 
 ## Step 3: Handoff
 
