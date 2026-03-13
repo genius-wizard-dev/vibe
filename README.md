@@ -1,130 +1,163 @@
+<div align="center">
+
+# VIBE
+
+**A lightweight, open-source workflow CLI for AI-assisted research, design, and implementation handoff.**
+
+**Install once, run across OpenCode, Claude Code, Gemini CLI, Codex, Cursor, Windsurf, Qwen, and Continue.**
+
+[![npm version](https://img.shields.io/npm/v/ai-vibe?style=for-the-badge&logo=npm&logoColor=white&color=CB3837)](https://www.npmjs.com/package/ai-vibe)
+[![npm downloads](https://img.shields.io/npm/dm/ai-vibe?style=for-the-badge&logo=npm&logoColor=white&color=CB3837)](https://www.npmjs.com/package/ai-vibe)
+[![CI](https://img.shields.io/github/actions/workflow/status/genius-wizard-dev/vibe/ci.yml?branch=main&style=for-the-badge&logo=github&label=CI)](https://github.com/genius-wizard-dev/vibe/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/genius-wizard-dev/vibe?style=for-the-badge&logo=github)](https://github.com/genius-wizard-dev/vibe/releases)
+[![GitHub stars](https://img.shields.io/github/stars/genius-wizard-dev/vibe?style=for-the-badge&logo=github&color=181717)](https://github.com/genius-wizard-dev/vibe)
+[![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)](LICENSE)
+
+<br>
+
+```bash
+npm exec --yes --package=ai-vibe -- vibe setup
 ```
-          ██╗   ██╗██╗██████╗ ███████╗
-          ██║   ██║██║██╔══██╗██╔════╝
-          ██║   ██║██║██████╔╝█████╗
-          ╚██╗ ██╔╝██║██╔══██╗██╔══╝
-          ╚████╔╝ ██║██████╔╝███████╗
-            ╚═══╝  ╚═╝╚═════╝ ╚══════╝
-```
 
-Open-source CLI for AI workflow orchestration:
+**Works on macOS, Linux, and Windows (Node.js 18+).**
 
-`research -> design -> resource bootstrap -> implementation`
+<br>
 
-`vibe` helps teams and solo builders keep AI-assisted work structured, resumable, and reusable across runtimes.
+[Why vibe](#why-vibe) · [Getting Started](#getting-started) · [How It Works](#how-it-works) · [Commands](#commands) · [Release Flow](#release-flow-github--npm)
 
-Inspired by:
+</div>
 
-- [github/spec-kit](https://github.com/github/spec-kit)
-- [gsd-build/get-shit-done](https://github.com/gsd-build/get-shit-done)
+---
 
-## What this project is
+## Why vibe
 
-`vibe` is a command/bootstrap layer, not an implementation framework.
+Most AI coding workflows break when context gets too noisy or teams skip structure.
 
-It installs workflow commands into your AI runtime (OpenCode, Claude, Gemini, Codex, etc.), then uses topic-based state under `.vibe/` to support:
+`vibe` gives you a practical layer between idea and implementation:
 
-- reusable research loops
-- reusable design loops
-- resource/bootstrap handoff before implementation
+- `research` pack for topic discovery and analysis
+- `design` pack for architecture and decision outputs
+- `resource` pack for implementation bridge/bootstrap
 
-This design keeps planning context organized while still letting you implement with your preferred system (Spec-Kit, GSD, BMAD, or your own flow).
+You can use only what you need (research-only, design-only, or full flow).
 
 ## Who this is for
 
-- Developers who want repeatable planning before coding
-- Researchers who only need research workflows (no code generation required)
-- Designers/architects who need structured architecture output and handoff artifacts
-- Open-source maintainers who need consistent, contributor-friendly process docs
+- Developers who want cleaner pre-implementation flow
+- Researchers who need structured outputs without coding setup
+- Designers/architects who want reusable handoff artifacts
+- Open-source maintainers who need repeatable contributor workflows
 
-## Core capabilities
+## Getting Started
 
-- Multi-runtime install (`opencode`, `claude`, `gemini`, `codex`, `cursor`, `windsurf`, `qwen`, `continue`)
-- Multi-pack install (`research`, `design`, `resource`) with user-selected packs
-- Topic-based state and outputs per research/design thread
-- Shared bridge context for implementation handoff
-- Prompt library install into `.vibe/prompts/`
-- Non-destructive setup modes (`--keep` vs `--force`)
+### Option 1: Run directly from npm (recommended)
 
-## Quick start
+```bash
+npm exec --yes --package=ai-vibe -- vibe setup
+```
+
+### Option 2: Install globally
+
+```bash
+npm install -g ai-vibe
+vibe --version
+vibe setup
+```
+
+### Option 3: Run latest directly from GitHub source
 
 ```bash
 npm exec --yes --package=github:genius-wizard-dev/vibe -- vibe setup
 ```
 
-## Common setup examples
+## Setup Profiles
+
+### Dev (full packs)
 
 ```bash
-# full flow
-vibe setup --all-packs --all-runtimes --prompts
-
-# research only
-vibe setup --research --opencode --local --symlink --prompts
-
-# design only
-vibe setup --design --opencode --local --symlink --prompts
-
-# resource bootstrap only
-vibe setup --resource --opencode --local --symlink
+vibe setup --all-packs --all-runtimes --prompts --local --symlink --keep
 ```
 
-## Setup wizard controls
+### Research-only
+
+```bash
+vibe setup --research --opencode --local --symlink --prompts --keep
+```
+
+### Design-only
+
+```bash
+vibe setup --design --opencode --local --symlink --prompts --keep
+```
+
+### Resource-only
+
+```bash
+vibe setup --resource --opencode --local --symlink --keep
+```
+
+## Setup Wizard Controls
 
 - `Space`: toggle option (multi-select)
-- `Enter`: confirm current step
+- `Enter`: confirm step
 - `Up/Down`: move cursor
 - `B`: go back to previous step (step 2 onward)
 
-## GitHub automation (CI + npm publish)
+## Supported Runtimes
 
-This repo includes:
+- OpenCode (`--opencode`)
+- Claude Code (`--claude`)
+- Gemini CLI (`--gemini`)
+- Codex CLI (`--codex`)
+- Cursor (`--cursor`)
+- Windsurf (`--windsurf`)
+- Qwen Code (`--qwen`)
+- Continue (`--continue`)
 
-- `.github/workflows/ci.yml` for pull request and push validation
-- `.github/workflows/publish-npm.yml` for auto npm publish on push to `main`
+Use `--all-runtimes` to install for all detected runtimes.
 
-Publish behavior:
+## How It Works
 
-- workflow reads `name` + `version` from `package.json`
-- if `${name}@${version}` already exists on npm, publish is skipped
-- if not, workflow publishes with provenance
+1. Run `vibe setup` and choose packs/runtimes/location/install mode.
+2. Open your AI runtime and run pack commands.
+3. Keep state and outputs under `.vibe/` for resume/handoff.
 
-### How to set npm token in GitHub
+Recommended full flow:
 
-1. Create npm automation token
-   - Log in at npmjs.com
-   - Go to Account Settings -> Access Tokens
-   - Generate a new token of type `Automation`
-2. Add token to GitHub repository secrets
-   - Repo -> Settings -> Secrets and variables -> Actions
-   - New repository secret
-   - Name: `NPM_TOKEN`
-   - Value: your npm automation token
-3. Bump package version and push to `main`
-   - Example: update `package.json` version (`0.2.1` -> `0.2.2`)
-   - Push commit to `main`
-   - GitHub Actions publishes automatically when version is new
+1. `/research.new` -> `/research.setup`
+2. `/design.new` -> `/design.setup`
+3. `/resource.setup`
+4. `/resource.findskills`
+5. `/resource.base`
+6. Implement with Spec-Kit / GSD / BMAD
+7. `/resource.changelogs`
 
-Tip: you can also trigger publish manually via `workflow_dispatch` in Actions tab.
-
-## CLI reference
+## Commands
 
 ```bash
+# core
 vibe --version
 vibe setup
 vibe list
 vibe update
-vibe remove
+vibe remove --yes
+
+# research
 vibe research result .
 vibe research result <project-root>
 vibe research global
+
+# design
 vibe design result .
 vibe design result <project-root>
 vibe design global
+
+# resource
 vibe resource status .
 vibe resource status <project-root>
 ```
 
-### Setup flags
+## Useful Setup Flags
 
 ```bash
 # packs
@@ -136,240 +169,112 @@ vibe setup --all-packs
 vibe setup --opencode --claude --gemini --codex --cursor --windsurf --qwen --continue
 vibe setup --all-runtimes
 
-# prompt library
-vibe setup --prompts
-vibe setup --no-prompts
-
-# resource mode preference
-vibe setup --fastsetup
-vibe setup --extra
-
-# install mode
+# install behavior
 vibe setup --symlink
 vibe setup --local-files
-
-# existing file policy
 vibe setup --keep
 vibe setup --force
+vibe setup --dry-run
 
-# scope / language
-vibe setup --local
-vibe setup --global
+# language and scope
 vibe setup --lang en
 vibe setup --lang vi
+vibe setup --local
+vibe setup --global
+
+# prompts and resource mode
+vibe setup --prompts
+vibe setup --no-prompts
+vibe setup --fastsetup
+vibe setup --extra
 ```
 
-## Command packs
+## Release Flow (GitHub + npm)
 
-### `research`
+This repository uses GitHub Actions for CI and release automation:
 
-- `/research.setup`
-- `/research.new`
-- `/research.resume`
-- `/research.scan`
-- `/research.interview`
-- `/research.analyze`
-- `/research.discuss`
-- `/research.log`
-- `/research.export`
+- CI: `.github/workflows/ci.yml`
+- Release: `.github/workflows/release.yml`
 
-### `design`
+On push to `main`, release workflow does:
 
-- `/design.setup`
-- `/design.new`
-- `/design.resume`
-- `/design.arch`
-- `/design.mcp`
-- `/design.review`
-- `/design.log`
-- `/design.export`
+1. `npm install`
+2. `npm run ci`
+3. Read `name` and `version` from `package.json`
+4. Publish to npm if version does not exist
+5. Create git tag `v<version>` if missing
+6. Create GitHub Release if missing
 
-### `resource`
+### Required secret
 
-- `/resource.setup`
-- `/resource.resume`
-- `/resource.detect`
-- `/resource.findskills`
-- `/resource.install`
-- `/resource.docs`
-- `/resource.skills`
-- `/resource.base`
-- `/resource.changelogs`
-- `/resource.verify`
+Add `NPM_TOKEN` in GitHub repo settings:
 
-## Prompt library
+1. npmjs.com -> Account Settings -> Access Tokens
+2. Create token type `Automation`
+3. GitHub repo -> Settings -> Secrets and variables -> Actions
+4. Add repository secret:
+   - Name: `NPM_TOKEN`
+   - Value: your npm automation token
 
-When enabled during setup, quick prompts are installed to `.vibe/prompts/`:
+See `RELEASING.md` for full details and troubleshooting.
 
-- `@fast.md`
-- `@research.md`
-- `@design.md`
-- `@resource.md`
-- `@implement.md`
-- `@parallel.md`
-- `@handoff.md`
+## Open-source Docs
 
-## Project structure
+- Contributing: `CONTRIBUTING.md`
+- Code of Conduct: `CODE_OF_CONDUCT.md`
+- Security Policy: `SECURITY.md`
+- Release Guide: `RELEASING.md`
 
-```text
-.
-|-- src/
-|   |-- index.js
-|   |-- setup.js
-|   |-- registry.js
-|   |-- fetch.js
-|   |-- list.js
-|   |-- remove.js
-|   |-- research.js
-|   |-- design.js
-|   |-- resource.js
-|   |-- tui.js
-|   |-- runtime-args.js
-|   `-- pack-args.js
-|-- commands/
-|   |-- research/en/*.md
-|   |-- design/en/*.md
-|   `-- resource/en/*.md
-|-- prompts/
-|   `-- en/*.md
-`-- README.md
-```
-
-## Runtime state model
-
-```text
-.vibe/
-|-- config.json
-|-- commands/
-|-- prompts/
-|-- research/
-|   |-- overview.md
-|   |-- active.md
-|   `-- <topic>/
-|       |-- state.md
-|       |-- brief.md
-|       |-- interview.md
-|       |-- analysis.md
-|       |-- discussion.md
-|       |-- decisions.md
-|       |-- logs.md
-|       `-- output.md
-|-- design/
-|   |-- overview.md
-|   |-- active.md
-|   `-- <topic>/
-|       |-- state.md
-|       |-- input.md
-|       |-- architecture.md
-|       |-- mcp.md
-|       |-- review.md
-|       |-- decisions.md
-|       |-- logs.md
-|       `-- output.md
-`-- resource/
-    |-- state.md
-    `-- context/bridge.md
-
-CHANGE_LOGS.md
-```
-
-## Architecture notes
-
-- `src/registry.js` is the single source of truth for runtimes, packs, prompt files, and remote asset locations.
-- `src/fetch.js` syncs markdown assets from GitHub raw URLs.
-- `src/setup.js` drives setup, installation mode, conflict policy, and prompt installation.
-- `src/tui.js` provides keyboard-first interactive widgets.
-- `src/list.js`, `src/research.js`, `src/design.js`, and `src/resource.js` provide state/result visibility.
-
-### Remote source overrides
-
-Use these environment variables to fetch assets from your own repo/branch:
-
-- `VIBE_GITHUB_REPO`
-- `VIBE_GITHUB_BRANCH`
-
-## Recommended workflow variants
-
-### Research-only
-
-1. `/research.new`
-2. `/research.setup`
-3. `/research.export`
-
-### Design-only
-
-1. `/design.new`
-2. `/design.setup`
-3. `/design.export`
-
-### Full flow
-
-1. `/research.new` -> `/research.setup`
-2. `/design.new` -> `/design.setup`
-3. `/resource.setup`
-4. `/resource.findskills`
-5. `/resource.base`
-6. implement with Spec-Kit/GSD/BMAD
-7. `/resource.changelogs`
-
-## Improvement roadmap (priority levels)
-
-This section is intentionally explicit so contributors can pick work quickly.
+## Roadmap (Priority Levels)
 
 ### Level 0 - Release-critical
 
-- [ ] Keep CLI/TUI version output in sync with `package.json`
-- [ ] Add automated smoke tests for `setup`, `list`, `remove`
-- [ ] Add fetch timeout + retry policy for remote asset sync
-- [ ] Remove unused dependencies and tighten package surface
-- [ ] Standardize exit codes for scripting and CI
+- [ ] Keep CLI/TUI version display fully aligned in all outputs
+- [ ] Add stronger smoke coverage for setup/list/remove paths
+- [ ] Add fetch retry/backoff and clearer network failure messages
+- [ ] Remove unused dependencies and reduce package surface
+- [ ] Standardize exit codes for scripts/CI tooling
 
 ### Level 1 - Core reliability
 
 - [ ] Split `src/setup.js` into smaller modules (`args`, `installer`, `summary`)
-- [ ] Add integration tests for `local/global` x `symlink/local-files`
-- [ ] Improve conflict handling for broken symlinks and partial installs
-- [ ] Validate all conflicting flags consistently
-- [ ] Add deterministic non-interactive flow for CI
+- [ ] Add integration tests for local/global x symlink/local-files matrix
+- [ ] Harden broken symlink and partial install recovery
+- [ ] Validate conflicting flags consistently across all command paths
+- [ ] Add deterministic non-interactive setup mode for CI
 
 ### Level 2 - Multi-domain expansion
 
-- [ ] Add domain presets (`--preset dev|research|design|hybrid`)
-- [ ] Add richer research-only and design-only templates
-- [ ] Add machine-readable export schema for downstream tooling
-- [ ] Add domain-focused packs for non-dev users (market/content/ops)
-- [ ] Add localization coverage beyond current language fallback
+- [ ] Add `--preset dev|research|design|hybrid`
+- [ ] Expand research-only and design-only templates
+- [ ] Add machine-readable export schema for downstream tools
+- [ ] Add domain packs for non-dev use cases
+- [ ] Expand localization coverage and fallback checks
 
 ### Level 3 - Open-source readiness
 
-- [x] Add `CONTRIBUTING.md` with local dev + test conventions
+- [x] Add `CONTRIBUTING.md`
 - [x] Add `CODE_OF_CONDUCT.md`
-- [x] Add `SECURITY.md` and disclosure policy
-- [x] Add CI pipeline (lint, tests, package checks)
-- [x] Add npm publish pipeline on push to `main`
-- [ ] Add release changelog automation
+- [x] Add `SECURITY.md`
+- [x] Add CI workflow
+- [x] Add automated GitHub + npm release workflow
+- [ ] Add changelog automation for release notes quality
 
 ### Level 4 - Ecosystem scale
 
 - [ ] Add plugin API for community packs/runtimes
-- [ ] Add compatibility test matrix across supported runtimes
-- [ ] Add optional telemetry (opt-in, privacy-first)
-- [ ] Add template versioning and migration path
-- [ ] Add benchmark suite for large-repo performance
+- [ ] Add compatibility matrix testing across runtimes
+- [ ] Add optional privacy-first telemetry
+- [ ] Add template versioning and migration contracts
+- [ ] Add large-repo performance benchmark suite
 
-## Community and governance
+## Security
 
-- Contribution guide: `CONTRIBUTING.md`
-- Code of Conduct: `CODE_OF_CONDUCT.md`
-- Security policy: `SECURITY.md`
-
-## Security and safety
-
-- Do not commit secrets (`.env`, credentials, tokens).
-- Prefer `--keep` when installing in existing projects.
-- Use `--dry-run` when validating setup strategy in sensitive repos.
-- Report vulnerabilities using `SECURITY.md` disclosure flow.
+- Do not commit secrets (`.env`, credentials, keys, tokens)
+- Prefer `--keep` in existing repositories
+- Use `--dry-run` for high-risk environments
+- Report vulnerabilities via `SECURITY.md`
 
 ## License
 
-MIT
+MIT License. See `LICENSE` for details.

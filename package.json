@@ -1,6 +1,6 @@
 {
   "name": "ai-vibe",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Bootstrap AI research, design, and resource packs with state management",
   "type": "module",
   "bin": {
