@@ -10,24 +10,19 @@
 - feat(agents): support batch sub-agent creation via `vibe agents create-many` and Setup Center action for fast team bootstrap.
 - feat(conversation): add `vibe convo list`/`--active-only` and `vibe convo monitor` for realtime observation with optional join-as-watcher.
 - ux(conversation): remove hard dependency on resource initialization; convo commands now run with a non-blocking workspace recommendation.
+- feat(commands): add `commands/conversation/conversation.md` as a structured multi-agent meeting guide command.
+- refactor(content): flatten language paths from `commands/*/en/*` and `prompts/en/*` into canonical package roots.
+- docs(prompts): strengthen research/design/resource prompt guidance around clarification-first interaction and refine-only base strategy.
+- chore(ci): standardize CI/release runtime to Node 22 and ignore local workspace/runtime generated folders.
 - refactor(src): reorganize source into domain folders (`src/commands/*`, `src/core/*`, `src/system/*`) and update module naming/import paths.
 - docs: refresh README/CONTRIBUTING structure references and roadmap notes for setup center + non-blocking convo behavior.
 
 ## Recent commit history
+- 2026-03-14 a53321a chore(ci): align workflows with node 22 baseline
+- 2026-03-14 72b1d75 refactor(content): flatten command and prompt locale paths
+- 2026-03-14 5a191cb feat(commands): add conversation workflow guide command
+- 2026-03-14 1c4d94b docs(changes): record setup, convo, and src refactor updates
+- 2026-03-14 6a1a5fe docs: align contributor and setup docs with new cli layout
+- 2026-03-14 52b85e1 refactor(src): reorganize cli modules into command/core domains
 - 2026-03-13 47b8dbc Fix/tui (#4)
 - 2026-03-13 47cc8ea fix: enhance confirm prompt to handle non-TTY input and improve key (#3)
-- 2026-03-13 72e7d31 feat: enhance release workflow to detect changes and skip unnecessary releases; add contributor links in release notes (#2)
-- 2026-03-13 30f1176 feat: enhance CI/CD workflows with release notes generation and remove language configuration (#1)
-- 2026-03-13 dcbdf00 feat: implement automated release workflow and update package version to 0.2.2
-- 2026-03-13 f2cbdef feat: add resource status command and enhance setup process
-- 2026-03-13 a0155a9 fix: update package version to 0.2.1; improve setup summary message and add display width functions
-- 2026-03-13 8eebc18 feat: Add language configuration and CLI version command; update package version and improve TUI formatting
-- 2026-03-13 7660e6c feat: Add reference tools for vibe.install and vibe.verify
-- 2026-03-13 0aab914 fix: update npmignore, README, and package version; change index.js permissions
-- 2026-03-13 6bc0dbc feat: add vibe commands for setup, resume, skills, docs, install, detect, and verify
-- 2026-03-13 733e762 feat: rename package to 'vibe-cli' and enhance description; add initial CLI implementation
-- 2026-03-13 99f9df8 style: format code for better readability in setup.js and update .gitignore
-- 2026-03-13 83ccf12 docs: update README header formatting and remove version number
-- 2026-03-13 5e2b7d9 docs: update README to clarify project name and description
-- 2026-03-13 57f585f refactor: rename and update references from 'vibe-coding' to 'vibe'
-- 2026-03-13 cde767a chore: initial commit
