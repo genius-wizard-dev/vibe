@@ -4,3 +4,9 @@ package-lock.json
 
 # vibe
 .vibe/index.db
+
+# vibe
+.vibe/commands
+.vibe/prompts
+.vibe
+.opencode
