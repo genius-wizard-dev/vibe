@@ -3,7 +3,7 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import { fetchMany } from "./fetch.js";
-import { COMMANDS, COMMAND_FILES, RUNTIMES } from "./registry.js";
+import { COMMAND_FILES, COMMANDS, RUNTIMES } from "./registry.js";
 import { parseRuntimeArgs } from "./runtime-args.js";
 import {
   confirm,
@@ -30,7 +30,7 @@ function detectRuntimes() {
   });
 }
 
-const RECOMMENDED_RUNTIMES = ["opencode", "codex"];
+const RECOMMENDED_RUNTIMES = [];
 
 function parseLocationArg(args) {
   const hasLocal = args.includes("--local");
@@ -173,14 +173,23 @@ async function installCommands(
         remote: `commands/${language}/${file}`,
         local: path.join(dir, file),
       }));
-      const referenceResults = await fetchMany(referenceItems, { force, dryRun });
-      referenceResults.forEach((r) => updateCounts(results.references, r.status));
+      const referenceResults = await fetchMany(referenceItems, {
+        force,
+        dryRun,
+      });
+      referenceResults.forEach((r) =>
+        updateCounts(results.references, r.status),
+      );
 
       const changed = referenceResults.filter(
         (r) => r.status !== "failed" && r.status !== "skipped",
       ).length;
-      const unchanged = referenceResults.filter((r) => r.status === "skipped").length;
-      const failed = referenceResults.filter((r) => r.status === "failed").length;
+      const unchanged = referenceResults.filter(
+        (r) => r.status === "skipped",
+      ).length;
+      const failed = referenceResults.filter(
+        (r) => r.status === "failed",
+      ).length;
       const detail = [
         changed > 0 ? `${changed} synced` : null,
         unchanged > 0 ? `${unchanged} unchanged` : null,

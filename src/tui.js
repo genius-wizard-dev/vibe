@@ -171,12 +171,15 @@ export function printHeader(text) {
 }
 
 export function printSummary(lines) {
+  const contentWidth = 44;
+  const frameWidth = contentWidth + 2;
+
   console.log();
-  console.log(chalk.cyan("  ╔" + "═".repeat(44) + "╗"));
+  console.log(chalk.cyan("  ╔" + "═".repeat(frameWidth) + "╗"));
   lines.forEach((l) => {
-    const padded = l.padEnd(44);
-    console.log(chalk.cyan("  ║") + ` ${padded}` + chalk.cyan(" ║"));
+    const padded = String(l ?? "").padEnd(contentWidth);
+    console.log(chalk.cyan("  ║") + ` ${padded} ` + chalk.cyan("║"));
   });
-  console.log(chalk.cyan("  ╚" + "═".repeat(44) + "╝"));
+  console.log(chalk.cyan("  ╚" + "═".repeat(frameWidth) + "╝"));
   console.log();
 }

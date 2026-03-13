@@ -2,7 +2,22 @@
 // vibe — AI vibe bootstrap CLI
 // Commands fetched from GitHub at runtime — repo is auto-resolved
 
+import fs from "fs";
+
 const [, , cmd, ...args] = process.argv;
+
+function getCliVersion() {
+  try {
+    const pkg = JSON.parse(
+      fs.readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+    );
+    return pkg.version || "0.0.0";
+  } catch {
+    return "0.0.0";
+  }
+}
+
+const CLI_VERSION = getCliVersion();
 
 const HELP = `
   ██╗   ██╗██╗██████╗ ███████╗
@@ -15,6 +30,7 @@ const HELP = `
   AI vibe Bootstrap
 
   Usage:
+    vibe --version       Show CLI version
     vibe setup           Interactive TUI setup wizard
     vibe setup --force   Re-download + overwrite existing files
     vibe setup --dry-run Preview without writing files
@@ -40,6 +56,11 @@ const HELP = `
 `;
 
 switch (cmd) {
+  case "version":
+  case "--version":
+  case "-v":
+    console.log(`vibe v${CLI_VERSION}`);
+    break;
   case "setup": {
     const { runSetup } = await import("./setup.js");
     await runSetup(args);
