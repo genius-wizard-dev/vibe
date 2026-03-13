@@ -154,7 +154,7 @@ async function installCommands(
       chalk.dim(`\n  📁 [${rt.label}]  ${dir.replace(os.homedir(), "~")}/`),
     );
     const items = COMMANDS.map((cmd) => ({
-      remote: `command/${language}/${cmd}.md`,
+      remote: `commands/${language}/${cmd}.md`,
       local: path.join(dir, `${cmd}.md`),
     }));
     const res = await fetchMany(items, { force, dryRun });
