@@ -50,8 +50,8 @@ Examples:
 
 ```bash
 node --check src/index.js
-node --check src/setup.js
-node --check src/tui.js
+node --check src/commands/setup.command.js
+node --check src/core/tui.js
 ```
 
 ### 2) CLI smoke checks
@@ -130,9 +130,9 @@ Required checklist:
 
 If adding a runtime:
 
-1. Add runtime definition in `src/registry.js`.
-2. Add/verify runtime flag aliases in `src/runtime-args.js`.
-3. Ensure setup selection/install flow supports it (`src/setup.js`).
+1. Add runtime definition in `src/core/registry.js`.
+2. Add/verify runtime flag aliases in `src/core/runtime-flags.js`.
+3. Ensure setup selection/install flow supports it (`src/commands/setup.command.js`).
 4. Verify list/remove behavior for local and global scope.
 5. Update README runtime docs.
 
@@ -140,9 +140,9 @@ If adding a runtime:
 
 If adding a pack:
 
-1. Add pack manifest in `src/registry.js`.
+1. Add pack manifest in `src/core/registry.js`.
 2. Add corresponding files under `commands/<pack>/<lang>/`.
-3. Validate pack argument parsing (`src/pack-args.js`).
+3. Validate pack argument parsing (`src/core/pack-flags.js`).
 4. Verify installation in both install modes (`symlink`, `local-files`).
 5. Update README pack and flow docs.
 

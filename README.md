@@ -3,7 +3,7 @@
 # VIBE
 
 **A lightweight, open-source workflow CLI for AI-assisted research, design, and implementation handoff.**
-**Install once, run across OpenCode, Claude Code, Gemini CLI, Codex, Cursor, Windsurf, Qwen, and Continue.**
+**Install once, run across OpenCode, Claude Code, Gemini CLI, Codex, Cursor, Windsurf, Qwen, Kiro CLI, and Continue.**
 
 [![npm version](https://img.shields.io/npm/v/ai-vibe?style=for-the-badge&logo=npm&logoColor=white&color=CB3837)](https://www.npmjs.com/package/ai-vibe)
 [![npm downloads](https://img.shields.io/npm/dm/ai-vibe?style=for-the-badge&logo=npm&logoColor=white&color=CB3837)](https://www.npmjs.com/package/ai-vibe)
@@ -18,11 +18,11 @@
 npm exec --yes --package=ai-vibe -- vibe setup
 ```
 
-**Works on macOS, Linux, and Windows (Node.js 18+).**
+**Works on macOS, Linux, and Windows (Node.js 22+).**
 
 <br>
 
-[Why vibe](#why-vibe) · [Getting Started](#getting-started) · [How It Works](#how-it-works) · [Commands](#commands) · [Release Flow](#release-flow-github--npm)
+[Why vibe](#why-vibe) · [Getting Started](#getting-started) · [How It Works](#how-it-works) · [Commands](#commands) · [Release Flow](#release-flow-github--npm) · [Changes Log](CHANGES.LOG)
 
 </div>
 
@@ -102,6 +102,14 @@ vibe setup --resource --opencode --local --symlink --keep
 - `Up/Down`: move cursor
 - `B`: go back to previous step (step 2 onward)
 
+## Settings Center (`vibe setup`)
+
+- Full TUI menu with back navigation (no auto-hide flow)
+- Built-in AI tool scan for: OpenCode, Claude Code, Gemini CLI, Codex CLI, Kiro CLI
+- If no tool is installed, menu actions are blocked with `(no tools setup)`
+- Convo menu stays available and shows `(resource setup recommended)` when setup is incomplete
+- Realtime monitor mode to watch conversations live: join + stream + exit with `q`
+
 ## Supported Runtimes
 
 - OpenCode (`--opencode`)
@@ -111,15 +119,17 @@ vibe setup --resource --opencode --local --symlink --keep
 - Cursor (`--cursor`)
 - Windsurf (`--windsurf`)
 - Qwen Code (`--qwen`)
+- Kiro CLI (`--kirocli`)
 - Continue (`--continue`)
 
 Use `--all-runtimes` to install for all detected runtimes.
 
 ## How It Works
 
-1. Run `vibe setup` and choose packs/runtimes/location/install mode.
-2. Open your AI runtime and run pack commands.
-3. Keep state and outputs under `.vibe/` for resume/handoff.
+1. Run `vibe setup` to open the full settings center menu.
+2. Continue with workspace setup wizard (packs/runtimes/location/install mode).
+3. Open your AI runtime and run pack commands.
+4. Keep state and outputs under `.vibe/` for resume/handoff.
 
 Recommended full flow:
 
@@ -137,16 +147,23 @@ Recommended full flow:
 # core
 vibe --version
 vibe setup
+vibe setup --help
 vibe list
 vibe update
 vibe remove --yes
 
 # research
+vibe research new <topic>
+vibe research new --name <topic> --root <project-root>
+vibe research new --name <topic> --global
 vibe research result .
 vibe research result <project-root>
 vibe research global
 
 # design
+vibe design new <topic>
+vibe design new --name <topic> --root <project-root>
+vibe design new --name <topic> --global
 vibe design result .
 vibe design result <project-root>
 vibe design global
@@ -154,6 +171,15 @@ vibe design global
 # resource
 vibe resource status .
 vibe resource status <project-root>
+
+# conversation
+vibe convo init
+vibe convo list
+vibe convo list --active-only
+vibe convo monitor <conversation_id> --join --actor observer --type human
+
+# agents
+vibe agents create-many squad --count 4 --runtime opencode --role specialist --yes
 ```
 
 ## Useful Setup Flags
@@ -165,7 +191,7 @@ vibe setup --packs resource,research,design
 vibe setup --all-packs
 
 # runtimes
-vibe setup --opencode --claude --gemini --codex --cursor --windsurf --qwen --continue
+vibe setup --opencode --claude --gemini --codex --cursor --windsurf --qwen --kirocli --continue
 vibe setup --all-runtimes
 
 # install behavior
@@ -230,6 +256,14 @@ See `RELEASING.md` for full details and troubleshooting.
 4. Merge `release/vX.Y.Z` into `main`
 5. CI/CD auto-publishes npm + creates GitHub Release with changelog notes
 
+## Source Structure
+
+- `src/index.js`: CLI entry + command routing
+- `src/commands/*`: command handlers (`setup`, `agents`, `research`, `design`, `resource`, `convo`, `list`, `remove`)
+- `src/core/*`: shared runtime/core modules (`registry`, flags parsing, TUI, remote fetch, agent registry)
+- `src/system/*`: environment and setup preflight checks
+- `src/conversation/*`: convo DB, services, realtime monitor, workflow execution
+
 ## Open-source Docs
 
 - Contributing: `CONTRIBUTING.md`
@@ -241,27 +275,27 @@ See `RELEASING.md` for full details and troubleshooting.
 
 ### Level 0 - Release-critical
 
-- [ ] Keep CLI/TUI version display fully aligned in all outputs
-- [ ] Add stronger smoke coverage for setup/list/remove paths
-- [ ] Add fetch retry/backoff and clearer network failure messages
-- [ ] Remove unused dependencies and reduce package surface
-- [ ] Standardize exit codes for scripts/CI tooling
+- [x] Gate `vibe setup` with AI tool preflight scan (OpenCode, Claude, Gemini, Codex, Kiro)
+- [x] Add Settings Center TUI with state hints (`no tools setup`, `resource setup recommended`)
+- [x] Add non-blocking convo workspace recommendation before convo actions
+- [x] Add realtime convo monitor (`vibe convo monitor`) for live multi-agent visibility
+- [ ] Add end-to-end tests for setup/menu/convo-monitor gating behavior
 
 ### Level 1 - Core reliability
 
-- [ ] Split `src/setup.js` into smaller modules (`args`, `installer`, `summary`)
+- [x] Introduce `src/system/*` modules for tool detection and workspace readiness checks
+- [ ] Split `src/commands/setup-center.command.js` into menu/action/state modules for easier maintenance
+- [x] Move command handlers into `src/commands/*` domain structure
 - [ ] Add integration tests for local/global x symlink/local-files matrix
 - [ ] Harden broken symlink and partial install recovery
-- [ ] Validate conflicting flags consistently across all command paths
-- [ ] Add deterministic non-interactive setup mode for CI
 
 ### Level 2 - Multi-domain expansion
 
-- [ ] Add `--preset dev|research|design|hybrid`
+- [x] Add Kiro CLI runtime support (`--kirocli`)
+- [ ] Add runtime capability matrix (tool -> command packs -> monitor support)
+- [ ] Add health checks for major AI CLIs (auth, version, executable status)
 - [ ] Expand research-only and design-only templates
 - [ ] Add machine-readable export schema for downstream tools
-- [ ] Add domain packs for non-dev use cases
-- [ ] Expand localization coverage and fallback checks
 
 ### Level 3 - Open-source readiness
 
@@ -271,6 +305,8 @@ See `RELEASING.md` for full details and troubleshooting.
 - [x] Add CI workflow
 - [x] Add automated GitHub + npm release workflow
 - [x] Add changelog automation for release notes quality
+- [ ] Add architecture docs for `/src` domains and contributor onboarding map
+- [ ] Add contributor guide for TUI patterns and menu state conventions
 
 ### Level 4 - Ecosystem scale
 
