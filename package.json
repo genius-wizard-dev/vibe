@@ -1,7 +1,7 @@
 {
-  "name": "vibe",
+  "name": "vibe-cli",
   "version": "0.1.0",
-  "description": "Bootstrap AI vibe stack — opencode + codex commands, state management",
+  "description": "Bootstrap AI vibe coding stack — opencode + codex commands, state management",
   "type": "module",
   "bin": {
     "vibe": "./src/vibe.js"
