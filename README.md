@@ -197,12 +197,17 @@ On push to `main`, release workflow does:
 
 1. `npm install`
 2. `npm run ci`
-3. Read `name` and `version` from `package.json`
-4. Publish to npm if version does not exist
-5. Create git tag `v<version>` if missing
-6. Generate changelog notes from commits + changed files
-7. Create GitHub Release if missing
-8. Upload `RELEASE_NOTES.md` as release asset
+3. Detect release scope (`src/**` or `package.json` changed)
+4. Read `name` and `version` from `package.json`
+5. Publish to npm if version does not exist
+6. Create git tag `v<version>` if missing
+7. Generate changelog notes from commits + changed files
+8. Create GitHub Release if missing
+9. Upload `RELEASE_NOTES.md` as release asset
+
+If a merge only changes docs/config (no `src/**` and no `package.json`), npm publish and GitHub release are skipped automatically.
+
+Contributors in release notes are auto-linked to GitHub profiles when detectable from commit metadata.
 
 ### Required secret
 
@@ -265,7 +270,7 @@ See `RELEASING.md` for full details and troubleshooting.
 - [x] Add `SECURITY.md`
 - [x] Add CI workflow
 - [x] Add automated GitHub + npm release workflow
-- [ ] Add changelog automation for release notes quality
+- [x] Add changelog automation for release notes quality
 
 ### Level 4 - Ecosystem scale
 
