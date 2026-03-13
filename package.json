@@ -1,18 +1,24 @@
 {
   "name": "ai-vibe",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Bootstrap AI research, design, and resource packs with state management",
   "type": "module",
   "bin": {
     "vibe": "./src/index.js"
   },
   "scripts": {
-    "check:syntax": "node --check src/index.js && node --check src/setup.js && node --check src/tui.js && node --check src/registry.js && node --check src/fetch.js && node --check src/list.js && node --check src/remove.js && node --check src/runtime-args.js && node --check src/pack-args.js && node --check src/research.js && node --check src/design.js && node --check src/resource.js",
+    "check:syntax": "node --check src/index.js && node --check src/setup.js && node --check src/tui.js && node --check src/registry.js && node --check src/fetch.js && node --check src/list.js && node --check src/remove.js && node --check src/runtime-args.js && node --check src/pack-args.js && node --check src/research.js && node --check src/design.js && node --check src/resource.js && node --check scripts/generate-release-notes.mjs",
     "smoke:cli": "node src/index.js --help && node src/index.js --version",
     "ci": "npm run check:syntax && npm run smoke:cli && npm pack --dry-run"
   },
   "files": [
-    "src"
+    "src",
+    "README.md",
+    "LICENSE",
+    "CONTRIBUTING.md",
+    "CODE_OF_CONDUCT.md",
+    "SECURITY.md",
+    "RELEASING.md"
   ],
   "dependencies": {
     "chalk": "^5.3.0",

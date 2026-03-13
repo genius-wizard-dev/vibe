@@ -31,3 +31,17 @@ jobs:
 
       - name: Run CI checks
         run: npm run ci
+
+  required-checks:
+    name: Required checks
+    runs-on: ubuntu-latest
+    needs: validate
+    if: always()
+    steps:
+      - name: Ensure matrix jobs passed
+        run: |
+          if [ "${{ needs.validate.result }}" != "success" ]; then
+            echo "Matrix validation failed"
+            exit 1
+          fi
+          echo "All required CI checks passed"
