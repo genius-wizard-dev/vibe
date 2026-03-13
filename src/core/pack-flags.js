@@ -3,9 +3,8 @@ import { getPackIds } from "./registry.js";
 // Normalizes pack-related CLI flags into canonical pack IDs.
 
 const PACK_FLAG_MAP = {
-  "--resource": "resource",
-  "--research": "research",
-  "--design": "design",
+  "--setup": "setup",
+  "--init": "setup",
   "--conversation": "conversation",
 };
 

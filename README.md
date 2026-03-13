@@ -2,7 +2,7 @@
 
 # VIBE
 
-**A lightweight, open-source workflow CLI for AI-assisted research, design, and implementation handoff.**
+**A lightweight, open-source workflow CLI for AI setup, SDD framework bootstrapping, and multi-agent execution.**
 **Install once, run across OpenCode, Claude Code, Gemini CLI, Codex, Cursor, Windsurf, Qwen, Kiro CLI, and Continue.**
 
 [![npm version](https://img.shields.io/npm/v/ai-vibe?style=for-the-badge&logo=npm&logoColor=white&color=CB3837)](https://www.npmjs.com/package/ai-vibe)
@@ -22,7 +22,7 @@ npm exec --yes --package=ai-vibe -- vibe setup
 
 <br>
 
-[Why vibe](#why-vibe) · [Getting Started](#getting-started) · [How It Works](#how-it-works) · [Commands](#commands) · [Release Flow](#release-flow-github--npm) · [Changes Log](CHANGES.LOG)
+[Why vibe](#why-vibe) · [Getting Started](#getting-started) · [How It Works](#how-it-works) · [Commands](#commands) · [Release Flow](#release-flow-github--npm) · [Changes Log](CHANGE_LOGS.md)
 
 </div>
 
@@ -34,17 +34,15 @@ Most AI coding workflows break when context gets too noisy or teams skip structu
 
 `vibe` gives you a practical layer between idea and implementation:
 
-- `research` pack for topic discovery and analysis
-- `design` pack for architecture and decision outputs
-- `resource` pack for implementation bridge/bootstrap
+- `setup` pack for resume-safe project initialization and workflow tooling
+- `conversation` pack for local multi-agent coordination
 
-You can use only what you need (research-only, design-only, or full flow).
+You can use only what you need (setup-only or setup+conversation).
 
 ## Who this is for
 
-- Developers who want cleaner pre-implementation flow
-- Researchers who need structured outputs without coding setup
-- Designers/architects who want reusable handoff artifacts
+- Developers who want clean setup + implementation workflows
+- Teams running multiple AI runtimes in one repo
 - Open-source maintainers who need repeatable contributor workflows
 
 ## Getting Started
@@ -74,25 +72,13 @@ npm exec --yes --package=github:genius-wizard-dev/vibe -- vibe setup
 ### Dev (full packs)
 
 ```bash
-vibe setup --all-packs --all-runtimes --prompts --local --symlink --keep
+vibe setup --all-packs --all-runtimes --local --keep --workflows speckit,gsd
 ```
 
-### Research-only
+### Setup-only (lean)
 
 ```bash
-vibe setup --research --opencode --local --symlink --prompts --keep
-```
-
-### Design-only
-
-```bash
-vibe setup --design --opencode --local --symlink --prompts --keep
-```
-
-### Resource-only
-
-```bash
-vibe setup --resource --opencode --local --symlink --keep
+vibe setup --init --opencode --local --keep --workflows speckit,gsd
 ```
 
 ## Setup Wizard Controls
@@ -107,7 +93,7 @@ vibe setup --resource --opencode --local --symlink --keep
 - Full TUI menu with back navigation (no auto-hide flow)
 - Built-in AI tool scan for: OpenCode, Claude Code, Gemini CLI, Codex CLI, Kiro CLI
 - If no tool is installed, menu actions are blocked with `(no tools setup)`
-- Convo menu stays available and shows `(resource setup recommended)` when setup is incomplete
+- Convo menu stays available and shows `(setup init recommended)` when setup is incomplete
 - Realtime monitor mode to watch conversations live: join + stream + exit with `q`
 
 ## Supported Runtimes
@@ -133,13 +119,13 @@ Use `--all-runtimes` to install for all detected runtimes.
 
 Recommended full flow:
 
-1. `/research.new` -> `/research.setup`
-2. `/design.new` -> `/design.setup`
-3. `/resource.setup`
-4. `/resource.findskills`
-5. `/resource.base`
-6. Implement with Spec-Kit / GSD / BMAD
-7. `/resource.changelogs`
+1. `/setup.init`
+2. `/setup.detect`
+3. `/setup.install`
+4. `/setup.verify`
+5. Implement with Spec-Kit / GSD / BMAD
+6. `/setup.update` (after major coding cycles)
+7. `/setup.changelogs`
 
 ## Commands
 
@@ -152,25 +138,9 @@ vibe list
 vibe update
 vibe remove --yes
 
-# research
-vibe research new <topic>
-vibe research new --name <topic> --root <project-root>
-vibe research new --name <topic> --global
-vibe research result .
-vibe research result <project-root>
-vibe research global
-
-# design
-vibe design new <topic>
-vibe design new --name <topic> --root <project-root>
-vibe design new --name <topic> --global
-vibe design result .
-vibe design result <project-root>
-vibe design global
-
-# resource
-vibe resource status .
-vibe resource status <project-root>
+# setup status
+vibe setup status .
+vibe setup status <project-root>
 
 # conversation
 vibe convo init
@@ -186,8 +156,8 @@ vibe agents create-many squad --count 4 --runtime opencode --role specialist --y
 
 ```bash
 # packs
-vibe setup --resource --research --design
-vibe setup --packs resource,research,design
+vibe setup --init --conversation
+vibe setup --packs setup,conversation
 vibe setup --all-packs
 
 # runtimes
@@ -195,8 +165,6 @@ vibe setup --opencode --claude --gemini --codex --cursor --windsurf --qwen --kir
 vibe setup --all-runtimes
 
 # install behavior
-vibe setup --symlink
-vibe setup --local-files
 vibe setup --keep
 vibe setup --force
 vibe setup --dry-run
@@ -205,9 +173,11 @@ vibe setup --dry-run
 vibe setup --local
 vibe setup --global
 
-# prompts and resource mode
-vibe setup --prompts
-vibe setup --no-prompts
+# workflow CLI selection + setup profile
+vibe setup --speckit --gsd --bmad
+vibe setup --workflows speckit,gsd
+vibe setup --install-workflows
+vibe setup --no-install-workflows
 vibe setup --fastsetup
 vibe setup --extra
 ```
@@ -259,7 +229,7 @@ See `RELEASING.md` for full details and troubleshooting.
 ## Source Structure
 
 - `src/index.js`: CLI entry + command routing
-- `src/commands/*`: command handlers (`setup`, `agents`, `research`, `design`, `resource`, `convo`, `list`, `remove`)
+- `src/commands/*`: command handlers (`setup`, `setup status`, `agents`, `convo`, `list`, `remove`)
 - `src/core/*`: shared runtime/core modules (`registry`, flags parsing, TUI, remote fetch, agent registry)
 - `src/system/*`: environment and setup preflight checks
 - `src/conversation/*`: convo DB, services, realtime monitor, workflow execution
@@ -276,7 +246,7 @@ See `RELEASING.md` for full details and troubleshooting.
 ### Level 0 - Release-critical
 
 - [x] Gate `vibe setup` with AI tool preflight scan (OpenCode, Claude, Gemini, Codex, Kiro)
-- [x] Add Settings Center TUI with state hints (`no tools setup`, `resource setup recommended`)
+- [x] Add Settings Center TUI with state hints (`no tools setup`, `setup init recommended`)
 - [x] Add non-blocking convo workspace recommendation before convo actions
 - [x] Add realtime convo monitor (`vibe convo monitor`) for live multi-agent visibility
 - [ ] Add end-to-end tests for setup/menu/convo-monitor gating behavior
@@ -286,15 +256,15 @@ See `RELEASING.md` for full details and troubleshooting.
 - [x] Introduce `src/system/*` modules for tool detection and workspace readiness checks
 - [ ] Split `src/commands/setup-center.command.js` into menu/action/state modules for easier maintenance
 - [x] Move command handlers into `src/commands/*` domain structure
-- [ ] Add integration tests for local/global x symlink/local-files matrix
-- [ ] Harden broken symlink and partial install recovery
+- [ ] Add integration tests for local/global install matrix
+- [ ] Harden partial setup recovery
 
 ### Level 2 - Multi-domain expansion
 
 - [x] Add Kiro CLI runtime support (`--kirocli`)
 - [ ] Add runtime capability matrix (tool -> command packs -> monitor support)
 - [ ] Add health checks for major AI CLIs (auth, version, executable status)
-- [ ] Expand research-only and design-only templates
+- [ ] Expand setup profiles and workflow presets
 - [ ] Add machine-readable export schema for downstream tools
 
 ### Level 3 - Open-source readiness

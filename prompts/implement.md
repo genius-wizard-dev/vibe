@@ -8,11 +8,11 @@ Input:
 
 Execution steps:
 
-1. Read `.vibe/resource/context/bridge.md`.
+1. Read `.vibe/context/bridge.md`.
 2. Align with selected workflow (Spec-Kit/GSD/BMAD).
 3. Split into small execution units with done criteria.
 4. Implement, verify, and summarize deltas only.
-5. Run `/resource.changelogs` after meaningful changes.
+5. Run `/setup.changelogs` after meaningful changes.
 
 Output format:
 

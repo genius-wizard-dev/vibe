@@ -33,14 +33,12 @@ const HELP = `
     vibe --version       Show CLI version
     vibe setup           Setup Center (TUI)
     vibe setup --help    Show setup command help
+    vibe setup status .  Show setup status for current project
     vibe setup --menu    Force open Setup Center menu
     vibe setup --force   Re-download + overwrite existing files
     vibe setup --dry-run Preview without writing files
-    vibe research ...    Research result and global listing
-    vibe design ...      Design result and global listing
     vibe agents ...      Local AI agent profile management
     vibe convo ...       Local multi-AI conversation commands
-    vibe resource ...    Resource readiness and status checks
     vibe remove          Remove .vibe and managed command files
     vibe list            Show installed commands + state
     vibe update          Re-sync all files from GitHub
@@ -48,12 +46,13 @@ const HELP = `
   Options:
     --opencode --claude --gemini --codex --cursor --windsurf --qwen --kirocli --continue
     --all / --all-tools / --all-runtimes
-    --resource --research --design --conversation
-    --packs resource,research,design,conversation
+    --setup --init --conversation
+    --packs setup,conversation
     --all-packs
     --fastsetup / --extra
-    --prompts / --no-prompts
-    --symlink / --local-files
+    --speckit / --gsd / --bmad
+    --workflows speckit,gsd,bmad
+    --install-workflows / --no-install-workflows
     --force / --keep
     --local / --global
     --yes (skip setup ready confirmation; non-interactive remove)
@@ -63,20 +62,8 @@ const HELP = `
     --cursor-ide --windsurf-ide --qwen-code --kiro --kiro-cli --continue-dev
 
   After setup:
-    Open your AI tool and run /research.setup
-    Continue with /design.setup and /resource.setup
-
-  Research CLI:
-    vibe research new <topic>
-    vibe research result .
-    vibe research result <project-root>
-    vibe research global
-
-  Design CLI:
-    vibe design new <topic>
-    vibe design result .
-    vibe design result <project-root>
-    vibe design global
+    Open your AI tool and run /setup.init
+    Continue with /setup.detect and /setup.install
 
   Agents CLI:
     vibe agents create planner --runtime opencode --skills sqlite,workflow
@@ -84,10 +71,6 @@ const HELP = `
     vibe agents edit planner --runtime claude --mode arg --args '["run","{prompt}"]' --sync-brain
     vibe agents list
     vibe agents suggest --topic "database migration strategy"
-
-  Resource CLI:
-    vibe resource status .
-    vibe resource status <project-root>
 
   Conversation CLI:
     vibe convo init
@@ -136,24 +119,9 @@ switch (cmd) {
     await runUpdate(args);
     break;
   }
-  case "research": {
-    const { runResearch } = await import("./commands/research.command.js");
-    await runResearch(args);
-    break;
-  }
-  case "design": {
-    const { runDesign } = await import("./commands/design.command.js");
-    await runDesign(args);
-    break;
-  }
   case "agents": {
     const { runAgents } = await import("./commands/agents.command.js");
     await runAgents(args);
-    break;
-  }
-  case "resource": {
-    const { runResource } = await import("./commands/resource.command.js");
-    await runResource(args);
     break;
   }
   case "convo":

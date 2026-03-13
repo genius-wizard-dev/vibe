@@ -2,10 +2,10 @@ import fs from "fs";
 import path from "path";
 
 // Agent registry manages local agent profiles under `.vibe/agents`.
-// It also keeps compatibility with the legacy `.vibe/agenst` path.
+// It also keeps compatibility with the legacy `.vibe/agents` path.
 
 const AGENTS_ROOT_NAME = "agents";
-const LEGACY_AGENTS_ROOT_NAME = "agenst";
+const LEGACY_AGENTS_ROOT_NAME = "agents";
 
 export const AGENT_RUNTIMES = {
   opencode: {
@@ -123,7 +123,11 @@ function upsertOverviewRow(overviewPath, rowData) {
     lines.push(row);
   }
 
-  fs.writeFileSync(overviewPath, `${lines.join("\n").replace(/\n*$/, "\n")}`, "utf8");
+  fs.writeFileSync(
+    overviewPath,
+    `${lines.join("\n").replace(/\n*$/, "\n")}`,
+    "utf8",
+  );
 }
 
 /**
@@ -214,9 +218,12 @@ function buildBrainContent({
   skillRefs,
   createdAt,
 }) {
-  const skillList = skills.length > 0 ? skills.map((item) => `- ${item}`).join("\n") : "- none";
+  const skillList =
+    skills.length > 0 ? skills.map((item) => `- ${item}`).join("\n") : "- none";
   const refsList =
-    skillRefs.length > 0 ? skillRefs.map((item) => `- ${item}`).join("\n") : "- none";
+    skillRefs.length > 0
+      ? skillRefs.map((item) => `- ${item}`).join("\n")
+      : "- none";
 
   return `# ${agent} brain
 
@@ -272,7 +279,10 @@ function upsertMetadataLine(content, key, value) {
   }
 
   if (/^created_at:\s*.*$/m.test(content)) {
-    return content.replace(/^created_at:\s*.*$/m, (matched) => `${matched}\n${line}`);
+    return content.replace(
+      /^created_at:\s*.*$/m,
+      (matched) => `${matched}\n${line}`,
+    );
   }
 
   if (/^#\s+.+$/m.test(content)) {
@@ -288,7 +298,10 @@ function escapeRegExp(input) {
 
 function replaceSection(content, heading, body) {
   const escaped = escapeRegExp(heading);
-  const sectionRegex = new RegExp(`(^## ${escaped}\\n\\n)([\\s\\S]*?)(?=\\n## |$)`, "m");
+  const sectionRegex = new RegExp(
+    `(^## ${escaped}\\n\\n)([\\s\\S]*?)(?=\\n## |$)`,
+    "m",
+  );
 
   if (sectionRegex.test(content)) {
     return content.replace(sectionRegex, `$1${body}\n`);
@@ -394,16 +407,10 @@ function syncLegacyAgentEntry(cwd, slug, agentDir) {
 /**
  * Creates a new agent folder with profile/brain/memory defaults.
  */
-export function createAgentDefinition(cwd, {
-  name,
-  runtime,
-  role,
-  goal,
-  skillsCsv,
-  command,
-  mode,
-  argsTemplate,
-}) {
+export function createAgentDefinition(
+  cwd,
+  { name, runtime, role, goal, skillsCsv, command, mode, argsTemplate },
+) {
   const slug = toSlug(name || "");
   if (!slug) {
     throw new Error("Missing or invalid agent name");
@@ -415,7 +422,8 @@ export function createAgentDefinition(cwd, {
     throw new Error(`Agent already exists: ${slug}`);
   }
 
-  const runtimeKey = runtime && AGENT_RUNTIMES[runtime] ? runtime : DEFAULT_AGENT_RUNTIME;
+  const runtimeKey =
+    runtime && AGENT_RUNTIMES[runtime] ? runtime : DEFAULT_AGENT_RUNTIME;
   const runtimeCfg = runtimeDefault(runtimeKey);
   const createdAt = new Date().toISOString();
 
@@ -492,18 +500,21 @@ export function createAgentDefinition(cwd, {
 /**
  * Updates an existing agent profile and optional brain metadata.
  */
-export function updateAgentDefinition(cwd, {
-  name,
-  runtime,
-  role,
-  goal,
-  skillsCsv,
-  command,
-  mode,
-  argsTemplate,
-  timeoutMs,
-  syncBrain = false,
-}) {
+export function updateAgentDefinition(
+  cwd,
+  {
+    name,
+    runtime,
+    role,
+    goal,
+    skillsCsv,
+    command,
+    mode,
+    argsTemplate,
+    timeoutMs,
+    syncBrain = false,
+  },
+) {
   const slug = toSlug(name || "");
   if (!slug) {
     throw new Error("Missing or invalid agent name");
@@ -548,7 +559,8 @@ export function updateAgentDefinition(cwd, {
       ? existing.skill_refs
       : [];
 
-  const parsedArgs = argsTemplate !== undefined ? parseArgsTemplate(argsTemplate) || [] : null;
+  const parsedArgs =
+    argsTemplate !== undefined ? parseArgsTemplate(argsTemplate) || [] : null;
   const parsedMode = normalizeMode(mode);
   const parsedTimeout = normalizeTimeout(timeoutMs);
 
@@ -557,7 +569,9 @@ export function updateAgentDefinition(cwd, {
     mode: parsedMode || existingExecutor.mode || runtimeCfg.mode,
     args:
       parsedArgs ||
-      (Array.isArray(existingExecutor.args) ? existingExecutor.args : runtimeCfg.args),
+      (Array.isArray(existingExecutor.args)
+        ? existingExecutor.args
+        : runtimeCfg.args),
     timeout_ms:
       parsedTimeout ||
       (Number.isFinite(Number(existingExecutor.timeout_ms))

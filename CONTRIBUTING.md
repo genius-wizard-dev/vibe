@@ -2,15 +2,15 @@
 
 Thanks for contributing to `vibe`.
 
-This project is an open-source Node.js CLI for AI workflow orchestration across packs (`research`, `design`, `resource`) and runtimes (OpenCode, Claude, Gemini, Codex, Cursor, Windsurf, Qwen, Continue).
+This project is an open-source Node.js CLI for setup-first SDD workflow orchestration and multi-agent conversation across runtimes (OpenCode, Claude, Gemini, Codex, Cursor, Windsurf, Qwen, Continue).
 
 ## Project scope
 
 `vibe` focuses on:
 
 - reliable CLI setup and runtime installation
-- clear command packs and prompt assets
-- resumable, topic-based workflow state
+- clear setup and conversation command packs
+- resumable setup state and multi-agent execution flow
 
 Out of scope for normal PRs:
 
@@ -143,7 +143,7 @@ If adding a pack:
 1. Add pack manifest in `src/core/registry.js`.
 2. Add corresponding files under `commands/<pack>/<lang>/`.
 3. Validate pack argument parsing (`src/core/pack-flags.js`).
-4. Verify installation in both install modes (`symlink`, `local-files`).
+4. Verify installation in both install scopes (`local`, `global`).
 5. Update README pack and flow docs.
 
 ## Commit message guidance

@@ -87,141 +87,98 @@ export const RUNTIMES = {
     localDir: ".opencode/commands",
     globalDir: "~/.config/opencode/commands",
     prefix: "/",
-    verify: "/resource.setup",
-    note: "Commands use / prefix",
+    verify: "/setup.init",
+    note: "Commands: /name, args: $ARGUMENTS, refs: @path",
   },
   claude: {
     label: "Claude Code",
     localDir: ".claude/commands",
     globalDir: "~/.claude/commands",
     prefix: "/",
-    verify: "/resource.setup",
-    note: "Commands use / prefix",
+    verify: "/setup.init",
+    note: "Commands: /name, args: $ARGUMENTS, refs: @path",
   },
   gemini: {
     label: "Gemini CLI",
     localDir: ".gemini/commands",
     globalDir: "~/.gemini/commands",
     prefix: "/",
-    verify: "/resource.setup",
-    note: "Commands use / prefix",
+    verify: "/setup.init",
+    note: "Commands: /name, tool refs: @tool, channels: #name",
   },
   codex: {
     label: "Codex CLI",
     localDir: ".codex/prompts",
     globalDir: "~/.codex/prompts",
     prefix: "/",
-    verify: "/resource.setup",
-    note: "Commands use / prefix",
+    verify: "/setup.init",
+    note: "Commands: /name, connectors: $app, refs: @path",
   },
   cursor: {
     label: "Cursor",
     localDir: ".cursor/commands",
     globalDir: "~/.cursor/commands",
     prefix: "/",
-    verify: "/resource.setup",
-    note: "Commands use / prefix",
+    verify: "/setup.init",
+    note: "Runtime syntax can include @ and # selectors",
   },
   windsurf: {
     label: "Windsurf",
     localDir: ".windsurf/commands",
     globalDir: "~/.windsurf/commands",
     prefix: "/",
-    verify: "/resource.setup",
-    note: "Commands use / prefix",
+    verify: "/setup.init",
+    note: "Runtime syntax can include @ and # selectors",
   },
   qwen: {
     label: "Qwen Code",
     localDir: ".qwen/commands",
     globalDir: "~/.qwen/commands",
     prefix: "/",
-    verify: "/resource.setup",
-    note: "Commands use / prefix",
+    verify: "/setup.init",
+    note: "Runtime syntax can include @ and # selectors",
   },
   kirocli: {
     label: "Kiro CLI",
     localDir: ".kiro/commands",
     globalDir: "~/.kiro/commands",
     prefix: "/",
-    verify: "/resource.setup",
-    note: "Commands use / prefix",
+    verify: "/setup.init",
+    note: "Commands: /name",
   },
   continue: {
     label: "Continue",
     localDir: ".continue/prompts",
     globalDir: "~/.continue/prompts",
     prefix: "/",
-    verify: "/resource.setup",
-    note: "Prompts use / prefix",
+    verify: "/setup.init",
+    note: "Prompts: /name, refs: @path",
   },
 };
 
 // Packs define which command resources can be installed.
 export const PACKS = {
-  resource: {
-    label: "Resource",
-    note: "Bootstrap and maintain shared AI resources before coding",
+  setup: {
+    label: "Setup",
+    note: "Initialize minimal AI coding stack and runtime wiring",
     languages: ["en"],
     commands: [
-      "resource.setup",
-      "resource.resume",
-      "resource.detect",
-      "resource.findskills",
-      "resource.install",
-      "resource.docs",
-      "resource.skills",
-      "resource.base",
-      "resource.changelogs",
-      "resource.verify",
+      "setup.init",
+      "setup.resume",
+      "setup.detect",
+      "setup.install",
+      "setup.docs",
+      "setup.skills",
+      "setup.verify",
+      "setup.sdd",
+      "setup.update",
+      "setup.changelogs",
     ],
     referenceFiles: [
-      "reference/resource.install.tools.md",
-      "reference/resource.verify.tools.md",
-      "reference/resource.flow.bridge.md",
+      "reference/setup.install.tools.md",
+      "reference/setup.verify.tools.md",
     ],
-    stateFile: ".vibe/resource/state.md",
-  },
-  research: {
-    label: "Research",
-    note: "Repeatable feature research with logs, analysis, and handoff",
-    languages: ["en"],
-    commands: [
-      "research.setup",
-      "research.new",
-      "research.resume",
-      "research.scan",
-      "research.interview",
-      "research.analyze",
-      "research.discuss",
-      "research.log",
-      "research.export",
-    ],
-    referenceFiles: [
-      "reference/research.interview.gsd.md",
-      "reference/research.export.schema.md",
-      "reference/research.folder.template.md",
-    ],
-    stateFile: ".vibe/research/<research>/state.md",
-  },
-  design: {
-    label: "Design",
-    note: "Repeatable architecture design from research output",
-    languages: ["en"],
-    commands: [
-      "design.setup",
-      "design.new",
-      "design.resume",
-      "design.arch",
-      "design.mcp",
-      "design.review",
-      "design.log",
-      "design.export",
-    ],
-    referenceFiles: [
-      "reference/design.skills.setup.md",
-      "reference/design.folder.template.md",
-    ],
-    stateFile: ".vibe/design/<design>/state.md",
+    stateFile: ".vibe/state.md",
   },
   conversation: {
     label: "Conversation",
@@ -232,41 +189,6 @@ export const PACKS = {
     stateFile: ".vibe/data/conversations.db",
   },
 };
-
-export const PROMPT_LIBRARY = {
-  languages: ["en"],
-  files: [
-    "fast.md",
-    "research.md",
-    "design.md",
-    "resource.md",
-    "implement.md",
-    "parallel.md",
-    "handoff.md",
-  ],
-};
-
-export function resolvePromptLanguage(requestedLanguage = "en") {
-  if (PROMPT_LIBRARY.languages.includes(requestedLanguage)) {
-    return { language: requestedLanguage, fallback: false };
-  }
-
-  return {
-    language: "en",
-    fallback: requestedLanguage !== "en",
-  };
-}
-
-/**
- * Returns prompt file manifest for the resolved language.
- */
-export function getPromptFiles(language = "en") {
-  const resolved = resolvePromptLanguage(language).language;
-  return {
-    language: resolved,
-    files: PROMPT_LIBRARY.files,
-  };
-}
 
 export function getPackIds() {
   return Object.keys(PACKS);

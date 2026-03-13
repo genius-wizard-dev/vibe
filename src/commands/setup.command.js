@@ -1,4 +1,5 @@
 import chalk from "chalk";
+import { execSync } from "child_process";
 import fs from "fs";
 import os from "os";
 import path from "path";
@@ -6,9 +7,7 @@ import { fetchMany } from "../core/remote-fetch.js";
 import {
   getPackIds,
   getPackManifest,
-  getPromptFiles,
   PACKS,
-  resolvePromptLanguage,
   RUNTIMES,
 } from "../core/registry.js";
 import { parsePackArgs } from "../core/pack-flags.js";
@@ -24,6 +23,7 @@ import {
   VIBE_ART,
 } from "../core/tui.js";
 import { detectInstalledTools } from "../system/tools.js";
+import { runSetupStatus } from "./setup-status.command.js";
 
 // Setup command is split into two layers:
 // 1) runSetup() decides between Setup Center menu and direct install mode.
@@ -31,17 +31,6 @@ import { detectInstalledTools } from "../system/tools.js";
 
 function expandHome(p) {
   return p?.startsWith("~") ? path.join(os.homedir(), p.slice(1)) : p;
-}
-
-function detectRuntimes() {
-  const cwd = process.cwd();
-  return Object.keys(RUNTIMES).filter((r) => {
-    const rt = RUNTIMES[r];
-    if (rt.localDir && fs.existsSync(path.join(cwd, rt.localDir.split("/")[0])))
-      return true;
-    if (rt.globalDir && fs.existsSync(expandHome(rt.globalDir))) return true;
-    return false;
-  });
 }
 
 const RECOMMENDED_RUNTIMES = [];
@@ -55,12 +44,6 @@ function parseLocationArg(args) {
   }
   if (hasLocal) return "local";
   if (hasGlobal) return "global";
-  return null;
-}
-
-function parseInstallModeArg(args) {
-  if (args.includes("--symlink")) return "symlink";
-  if (args.includes("--local-files") || args.includes("--copy")) return "local";
   return null;
 }
 
@@ -86,13 +69,15 @@ function parseSetupModeArg(args) {
   return null;
 }
 
-function parsePromptInstallArg(args) {
-  const hasInstall = args.includes("--prompts");
-  const hasSkip = args.includes("--no-prompts");
+function parseWorkflowInstallArg(args) {
+  const hasInstall = args.includes("--install-workflows");
+  const hasSkip = args.includes("--no-install-workflows");
 
   if (hasInstall && hasSkip) {
     console.error(
-      chalk.red("\n  Use either --prompts or --no-prompts, not both.\n"),
+      chalk.red(
+        "\n  Use either --install-workflows or --no-install-workflows, not both.\n",
+      ),
     );
     process.exit(1);
   }
@@ -102,8 +87,48 @@ function parsePromptInstallArg(args) {
   return null;
 }
 
+function parseWorkflowArgs(args) {
+  const selected = new Set();
+
+  if (args.includes("--speckit")) selected.add("speckit");
+  if (args.includes("--gsd")) selected.add("gsd");
+  if (args.includes("--bmad")) selected.add("bmad");
+
+  const flagIndex = args.findIndex((arg) => arg === "--workflows");
+  if (flagIndex >= 0) {
+    const value = String(args[flagIndex + 1] || "").trim();
+    value
+      .split(",")
+      .map((item) => item.trim().toLowerCase())
+      .filter(Boolean)
+      .forEach((item) => selected.add(item));
+  }
+
+  args
+    .filter((arg) => arg.startsWith("--workflows="))
+    .forEach((arg) => {
+      String(arg.split("=")[1] || "")
+        .split(",")
+        .map((item) => item.trim().toLowerCase())
+        .filter(Boolean)
+        .forEach((item) => selected.add(item));
+    });
+
+  const valid = ["speckit", "gsd", "bmad"];
+  const invalid = [...selected].filter((item) => !valid.includes(item));
+  if (invalid.length > 0) {
+    console.error(
+      chalk.red(
+        `\n  Invalid workflow flag(s): ${invalid.join(", ")}. Use speckit, gsd, bmad.\n`,
+      ),
+    );
+    process.exit(1);
+  }
+
+  return [...selected];
+}
+
 const INSTALL_MODE_LABELS = {
-  symlink: "Symlink",
   local: "Local files",
 };
 
@@ -112,14 +137,12 @@ const SETUP_MODE_LABELS = {
   extra: "Extra",
 };
 
-const LANGUAGE_LABELS = {
-  en: "English",
-};
-
 const SETUP_HELP = `
 Usage:
   vibe setup
   vibe setup --menu
+  vibe setup status .
+  vibe setup status <project-root>
   vibe setup [install options]
 
 Setup Center:
@@ -127,15 +150,16 @@ Setup Center:
   vibe setup --menu     Force open setup center (TUI)
 
 Workspace setup options:
-  --resource --research --design --conversation
-  --packs resource,research,design,conversation
+  --setup --init --conversation
+  --packs setup,conversation
   --all-packs
   --opencode --claude --gemini --codex --cursor --windsurf --qwen --kirocli --continue
   --all-runtimes
-  --symlink --local-files
+  --speckit --gsd --bmad
+  --workflows speckit,gsd,bmad
+  --install-workflows --no-install-workflows
   --force --keep
   --local --global
-  --prompts --no-prompts
   --fastsetup --extra
   --dry-run --yes
 `;
@@ -147,6 +171,67 @@ const TOOL_RUNTIME_MAP = {
   codex: "codex",
   kirocli: "kirocli",
 };
+
+const WORKFLOW_OPTIONS = [
+  {
+    value: "speckit",
+    label: "Spec-Kit",
+    desc: "specify/plan/tasks/implement workflow",
+  },
+  {
+    value: "gsd",
+    label: "GSD",
+    desc: "get-shit-done execution flow",
+  },
+  {
+    value: "bmad",
+    label: "BMAD",
+    desc: "orchestration workflow (optional)",
+  },
+];
+
+const GSD_RUNTIME_FLAGS = {
+  claude: "--claude",
+  opencode: "--opencode",
+  gemini: "--gemini",
+  codex: "--codex",
+};
+
+const SPECKIT_AI_PREFERENCE = ["claude", "codex", "gemini"];
+
+function findCommand(command) {
+  const entries = String(process.env.PATH || "")
+    .split(path.delimiter)
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+
+  for (const entry of entries) {
+    const candidate = path.join(entry, command);
+    if (fs.existsSync(candidate)) return candidate;
+  }
+
+  return "";
+}
+
+function runShell(command, { dryRun, label }) {
+  if (dryRun) {
+    printStep(label, "done", `(dry-run) ${command}`);
+    return { ok: true };
+  }
+
+  try {
+    execSync(command, {
+      stdio: "inherit",
+      cwd: process.cwd(),
+    });
+    printStep(label, "done");
+    return { ok: true };
+  } catch (error) {
+    const message = String(error?.message || "command failed").split("\n")[0];
+    printStep(label, "fail", message);
+    return { ok: false, error: message };
+  }
+}
 
 function hasLanguageArg(args) {
   return args.includes("--lang") || args.some((a) => a.startsWith("--lang="));
@@ -180,7 +265,12 @@ function getSavedSetupMode(cwd) {
   return "extra";
 }
 
-function saveLanguageConfig(cwd, location, language, { dryRun, setupMode }) {
+function saveLanguageConfig(
+  cwd,
+  location,
+  language,
+  { dryRun, setupMode, runtimes = [], workflows = [] },
+) {
   if (dryRun) return;
 
   const localDir = path.join(cwd, ".vibe");
@@ -188,6 +278,9 @@ function saveLanguageConfig(cwd, location, language, { dryRun, setupMode }) {
   fs.mkdirSync(localDir, { recursive: true });
   const localConfig = { ...readJsonFile(localFile), language };
   if (setupMode) localConfig.setupMode = setupMode;
+  localConfig.selectedRuntimes = [...new Set(runtimes)];
+  localConfig.selectedWorkflowCli = [...new Set(workflows)];
+  localConfig.installLocation = location;
   fs.writeFileSync(
     localFile,
     `${JSON.stringify(localConfig, null, 2)}\n`,
@@ -200,6 +293,9 @@ function saveLanguageConfig(cwd, location, language, { dryRun, setupMode }) {
     fs.mkdirSync(globalDir, { recursive: true });
     const globalConfig = { ...readJsonFile(globalFile), language };
     if (setupMode) globalConfig.setupMode = setupMode;
+    globalConfig.selectedRuntimes = [...new Set(runtimes)];
+    globalConfig.selectedWorkflowCli = [...new Set(workflows)];
+    globalConfig.installLocation = location;
     fs.writeFileSync(
       globalFile,
       `${JSON.stringify(globalConfig, null, 2)}\n`,
@@ -208,71 +304,66 @@ function saveLanguageConfig(cwd, location, language, { dryRun, setupMode }) {
   }
 }
 
-function getCacheRoot(cwd, location) {
-  if (location === "global") {
-    return path.join(os.homedir(), ".config", "vibe", ".vibe", "commands");
-  }
-  return path.join(cwd, ".vibe", "commands");
-}
+function ensureSetupStateFile(cwd, { dryRun }) {
+  if (dryRun) return;
 
-function getPromptRoot(cwd, location) {
-  if (location === "global") {
-    return path.join(os.homedir(), ".config", "vibe", ".vibe", "prompts");
-  }
-  return path.join(cwd, ".vibe", "prompts");
-}
+  const stateFile = path.join(cwd, ".vibe", "state.md");
+  if (fs.existsSync(stateFile)) return;
 
-function pathExists(filePath) {
-  try {
-    fs.lstatSync(filePath);
-    return true;
-  } catch {
-    return false;
-  }
-}
+  const now = new Date().toISOString();
+  const template = `# .vibe/state.md
 
-function linkStatus(result) {
-  if (result === "failed") return "fail";
-  if (result === "skipped") return "skip";
-  return "done";
-}
+# Checkpoint — AI reads this file to resume
 
-function ensureSymlink(source, target, { force, dryRun }) {
-  if (!pathExists(source)) {
-    return { status: "failed", error: "source missing" };
-  }
+# status: ✅ done | 🔄 in-progress | ⏸ pending | ❌ failed
 
-  if (pathExists(target)) {
-    try {
-      const stat = fs.lstatSync(target);
-      if (stat.isSymbolicLink()) {
-        const current = fs.readlinkSync(target);
-        const currentResolved = path.resolve(path.dirname(target), current);
-        if (currentResolved === path.resolve(source)) {
-          return { status: "skipped" };
-        }
-      }
-    } catch {
-      // ignore readlink errors and fallback to replace/skip logic
-    }
+## Meta
+- created: ${now}
+- last_updated: ${now}
+- workspace: ${cwd}
 
-    if (!force) {
-      return { status: "skipped" };
-    }
+## [SCAN] status: ⏸ pending
+stack: ~
+phase: ~
+source_files: ~
+infra: ~
 
-    if (!dryRun) {
-      fs.rmSync(target, { recursive: true, force: true });
-    }
-  }
+## [INTERVIEW] status: ⏸ pending
+- [1/8] problem: ~
+- [2/8] phase: ~
+- [3/8] data_flow: ~
+- [4/8] adrs: ~
+- [5/8] domain: ~
+- [6/8] iteration: ~
+- [7/8] constraints: ~
+- [8/8] agents: ~
 
-  if (dryRun) {
-    return { status: "would-create" };
-  }
+## [DETECT] status: ⏸ pending
+recommendation: ~
+selected_workflows: ~
+confirmed: false
 
-  fs.mkdirSync(path.dirname(target), { recursive: true });
-  const rel = path.relative(path.dirname(target), source);
-  fs.symlinkSync(rel, target);
-  return { status: "created" };
+## [TOOLS] status: ⏸ pending
+selected: ~
+
+## [INSTALL] status: ⏸ pending
+- opencode VEXP MCP: ⏸
+- codex VEXP MCP: ⏸
+- speckit opencode: ⏸
+- speckit codex: ⏸
+- gsd opencode: ⏸
+- gsd codex: ⏸
+
+## [DOCS] status: ⏸ pending
+
+## [SKILLS] status: ⏸ pending
+skills: []
+
+## [VERIFY] status: ⏸ pending
+`;
+
+  fs.mkdirSync(path.dirname(stateFile), { recursive: true });
+  fs.writeFileSync(stateFile, template, "utf8");
 }
 
 // ─── Install commands ─────────────────────────────────────────────────────────
@@ -281,14 +372,12 @@ async function installCommands(
   runtimes,
   packs,
   location,
-  language,
-  { force, dryRun, installMode },
+  { force, dryRun },
 ) {
   if (runtimes.length === 0 || packs.length === 0) {
     return {
       commands: { created: 0, skipped: 0, failed: 0 },
       references: { created: 0, skipped: 0, failed: 0 },
-      links: { created: 0, skipped: 0, failed: 0 },
     };
   }
 
@@ -296,7 +385,6 @@ async function installCommands(
   const results = {
     commands: { created: 0, skipped: 0, failed: 0 },
     references: { created: 0, skipped: 0, failed: 0 },
-    links: { created: 0, skipped: 0, failed: 0 },
   };
   const manifests = getPackManifest(packs);
 
@@ -305,74 +393,6 @@ async function installCommands(
     else if (status === "skipped") bucket.skipped++;
     else bucket.created++;
   };
-
-  const cwd = process.cwd();
-  const cacheRoot = getCacheRoot(cwd, location);
-
-  const syncPackCache = async (manifest) => {
-    const packRoot = path.join(cacheRoot, manifest.id);
-    const commandItems = manifest.commands.map((cmd) => ({
-      remote: `commands/${manifest.id}/${cmd}.md`,
-      local: path.join(packRoot, `${cmd}.md`),
-    }));
-    const commandResults = await fetchMany(commandItems, { force, dryRun });
-    commandResults.forEach((r, i) => {
-      updateCounts(results.commands, r.status);
-      printStep(manifest.commands[i], linkStatus(r.status));
-    });
-
-    let referenceResults = [];
-    if (manifest.referenceFiles.length > 0) {
-      const referenceItems = manifest.referenceFiles.map((file) => ({
-        remote: `commands/${manifest.id}/${file}`,
-        local: path.join(packRoot, file),
-      }));
-      referenceResults = await fetchMany(referenceItems, {
-        force,
-        dryRun,
-      });
-      referenceResults.forEach((r) => updateCounts(results.references, r.status));
-
-      const changed = referenceResults.filter(
-        (r) => r.status !== "failed" && r.status !== "skipped",
-      ).length;
-      const unchanged = referenceResults.filter(
-        (r) => r.status === "skipped",
-      ).length;
-      const failed = referenceResults.filter(
-        (r) => r.status === "failed",
-      ).length;
-      const detail = [
-        changed > 0 ? `${changed} synced` : null,
-        unchanged > 0 ? `${unchanged} unchanged` : null,
-        failed > 0 ? `${failed} failed` : null,
-      ]
-        .filter(Boolean)
-        .join(" · ");
-      const refStatus =
-        failed > 0 ? "fail" : changed > 0 ? "done" : "skip";
-      printStep(`reference/${manifest.id}/*`, refStatus, detail);
-    }
-
-    return {
-      packRoot,
-      commandResults,
-      referenceResults,
-    };
-  };
-
-  let cacheMap = new Map();
-
-  if (installMode === "symlink") {
-    printHeader("Syncing Command Cache");
-    console.log(chalk.dim(`  Cache: ${cacheRoot.replace(os.homedir(), "~")}\n`));
-
-    for (const manifest of manifests) {
-      console.log(chalk.dim(`  pack: ${manifest.label}`));
-      const cached = await syncPackCache(manifest);
-      cacheMap.set(manifest.id, cached.packRoot);
-    }
-  }
 
   for (const runtime of runtimes) {
     const rt = RUNTIMES[runtime];
@@ -385,98 +405,55 @@ async function installCommands(
 
     for (const manifest of manifests) {
       console.log(chalk.dim(`    pack: ${manifest.label}`));
+      const commandItems = manifest.commands.map((cmd) => ({
+        remote: `commands/${manifest.id}/${cmd}.md`,
+        local: path.join(dir, `${cmd}.md`),
+      }));
+      const commandResults = await fetchMany(commandItems, { force, dryRun });
+      commandResults.forEach((r, i) => {
+        const s =
+          r.status === "failed"
+            ? "fail"
+            : r.status === "skipped"
+              ? "skip"
+              : "done";
+        printStep(manifest.commands[i], s);
+        updateCounts(results.commands, r.status);
+      });
 
-      if (installMode === "symlink") {
-        const packRoot = cacheMap.get(manifest.id);
-
-        manifest.commands.forEach((cmd) => {
-          const source = path.join(packRoot, `${cmd}.md`);
-          const target = path.join(dir, `${cmd}.md`);
-          const link = ensureSymlink(source, target, { force, dryRun });
-          updateCounts(results.links, link.status);
-          printStep(cmd, linkStatus(link.status), link.error || "");
+      if (manifest.referenceFiles.length > 0) {
+        const referenceItems = manifest.referenceFiles.map((file) => ({
+          remote: `commands/${manifest.id}/${file}`,
+          local: path.join(dir, file),
+        }));
+        const referenceResults = await fetchMany(referenceItems, {
+          force,
+          dryRun,
         });
+        referenceResults.forEach((r) =>
+          updateCounts(results.references, r.status),
+        );
 
-        let createdRefLinks = 0;
-        let skippedRefLinks = 0;
-        let failedRefLinks = 0;
-        manifest.referenceFiles.forEach((file) => {
-          const source = path.join(packRoot, file);
-          const target = path.join(dir, file);
-          const link = ensureSymlink(source, target, { force, dryRun });
-          updateCounts(results.links, link.status);
-          if (link.status === "failed") failedRefLinks += 1;
-          else if (link.status === "skipped") skippedRefLinks += 1;
-          else createdRefLinks += 1;
-        });
-        const refLinks = manifest.referenceFiles.length;
+        const changed = referenceResults.filter(
+          (r) => r.status !== "failed" && r.status !== "skipped",
+        ).length;
+        const unchanged = referenceResults.filter(
+          (r) => r.status === "skipped",
+        ).length;
+        const failed = referenceResults.filter(
+          (r) => r.status === "failed",
+        ).length;
         const detail = [
-          createdRefLinks > 0 ? `${createdRefLinks} linked` : null,
-          skippedRefLinks > 0 ? `${skippedRefLinks} unchanged` : null,
-          failedRefLinks > 0 ? `${failedRefLinks} failed` : null,
+          changed > 0 ? `${changed} synced` : null,
+          unchanged > 0 ? `${unchanged} unchanged` : null,
+          failed > 0 ? `${failed} failed` : null,
         ]
           .filter(Boolean)
           .join(" · ");
-        printStep(
-          `reference/${manifest.id}/*`,
-          failedRefLinks > 0
-            ? "fail"
-            : createdRefLinks > 0
-              ? "done"
-              : "skip",
-          refLinks > 0 ? detail : "none",
-        );
-      } else {
-        const commandItems = manifest.commands.map((cmd) => ({
-          remote: `commands/${manifest.id}/${cmd}.md`,
-          local: path.join(dir, `${cmd}.md`),
-        }));
-        const commandResults = await fetchMany(commandItems, { force, dryRun });
-        commandResults.forEach((r, i) => {
-          const s =
-            r.status === "failed"
-              ? "fail"
-              : r.status === "skipped"
-                ? "skip"
-                : "done";
-          printStep(manifest.commands[i], s);
-          updateCounts(results.commands, r.status);
-        });
 
-        if (manifest.referenceFiles.length > 0) {
-          const referenceItems = manifest.referenceFiles.map((file) => ({
-            remote: `commands/${manifest.id}/${file}`,
-            local: path.join(dir, file),
-          }));
-          const referenceResults = await fetchMany(referenceItems, {
-            force,
-            dryRun,
-          });
-          referenceResults.forEach((r) =>
-            updateCounts(results.references, r.status),
-          );
-
-          const changed = referenceResults.filter(
-            (r) => r.status !== "failed" && r.status !== "skipped",
-          ).length;
-          const unchanged = referenceResults.filter(
-            (r) => r.status === "skipped",
-          ).length;
-          const failed = referenceResults.filter(
-            (r) => r.status === "failed",
-          ).length;
-          const detail = [
-            changed > 0 ? `${changed} synced` : null,
-            unchanged > 0 ? `${unchanged} unchanged` : null,
-            failed > 0 ? `${failed} failed` : null,
-          ]
-            .filter(Boolean)
-            .join(" · ");
-
-          const refStatus =
-            failed > 0 ? "fail" : changed > 0 ? "done" : "skip";
-          printStep(`reference/${manifest.id}/*`, refStatus, detail);
-        }
+        const refStatus =
+          failed > 0 ? "fail" : changed > 0 ? "done" : "skip";
+        printStep(`reference/${manifest.id}/*`, refStatus, detail);
       }
     }
   }
@@ -484,80 +461,150 @@ async function installCommands(
   return results;
 }
 
-async function installPrompts(cwd, location, language, { force, dryRun }) {
-  const promptRoot = getPromptRoot(cwd, location);
-  const promptLang = resolvePromptLanguage(language);
-  const manifest = getPromptFiles(promptLang.language);
-
-  printHeader("Installing Prompt Library");
-  console.log(chalk.dim(`  Target: ${promptRoot.replace(os.homedir(), "~")}`));
-
-  if (promptLang.fallback) {
-    console.log(
-      chalk.yellow(
-        `  Prompt language '${language}' is unavailable. Falling back to '${manifest.language}'.`,
-      ),
-    );
+function resolveSpecKitAiTarget(runtimes) {
+  for (const candidate of SPECKIT_AI_PREFERENCE) {
+    if (runtimes.includes(candidate)) return candidate;
   }
+  return "claude";
+}
 
-  console.log();
-
-  const items = manifest.files.map((file) => ({
-    remote: `prompts/${file}`,
-    local: path.join(promptRoot, file),
-  }));
-
-  const results = await fetchMany(items, { force, dryRun });
-  const summary = {
-    installed: true,
-    root: promptRoot,
-    language: manifest.language,
-    created: 0,
-    skipped: 0,
-    failed: 0,
+function installSpecKitCli({ runtimes, dryRun }) {
+  const result = {
+    status: "pending",
+    detail: "",
   };
 
-  results.forEach((res, index) => {
-    if (res.status === "failed") summary.failed += 1;
-    else if (res.status === "skipped") summary.skipped += 1;
-    else summary.created += 1;
+  const uvPath = findCommand("uv");
+  if (!uvPath) {
+    const uvInstallCommand =
+      process.platform === "win32"
+        ? 'powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"'
+        : "curl -LsSf https://astral.sh/uv/install.sh | sh";
+    const installUv = runShell(
+      uvInstallCommand,
+      {
+        dryRun,
+        label: "install uv",
+      },
+    );
+    if (!installUv.ok) {
+      result.status = "failed";
+      result.detail = "uv install failed";
+      return result;
+    }
+  }
 
-    const status =
-      res.status === "failed"
-        ? "fail"
-        : res.status === "skipped"
-          ? "skip"
-          : "done";
-    const promptName = `@${manifest.files[index]}`;
-    printStep(promptName, status, res.error || "");
-  });
+  const ai = resolveSpecKitAiTarget(runtimes);
+  const initResult = runShell(
+    `uvx --from git+https://github.com/github/spec-kit.git specify init --here --ai ${ai}`,
+    {
+      dryRun,
+      label: `specify init (${ai})`,
+    },
+  );
 
-  return summary;
+  if (!initResult.ok) {
+    result.status = "failed";
+    result.detail = "specify init failed";
+    return result;
+  }
+
+  result.status = "done";
+  result.detail = `ai=${ai}`;
+  return result;
+}
+
+function installGsdBmadCli({ runtimes, location, dryRun }) {
+  const uniqueFlags = [...new Set(runtimes.map((id) => GSD_RUNTIME_FLAGS[id]).filter(Boolean))];
+  if (uniqueFlags.length === 0) {
+    return {
+      status: "manual-required",
+      detail: "no supported runtime flag for get-shit-done-cc",
+    };
+  }
+
+  const locationFlag = location === "global" ? "--global" : "--local";
+  for (const runtimeFlag of uniqueFlags) {
+    const cmd = `npx get-shit-done-cc ${runtimeFlag} ${locationFlag}`;
+    const run = runShell(cmd, {
+      dryRun,
+      label: `get-shit-done-cc ${runtimeFlag}`,
+    });
+    if (!run.ok) {
+      return {
+        status: "failed",
+        detail: `${runtimeFlag} install failed`,
+      };
+    }
+  }
+
+  return {
+    status: "done",
+    detail: `${uniqueFlags.length} runtime target(s)`,
+  };
+}
+
+function installWorkflowCliTooling({ workflows, runtimes, location, dryRun }) {
+  const selected = new Set(workflows);
+  const statuses = {
+    speckit: "not-selected",
+    gsd: "not-selected",
+    bmad: "not-selected",
+  };
+  const details = {
+    speckit: "",
+    gsd: "",
+    bmad: "",
+  };
+
+  if (selected.has("speckit")) {
+    const speckitResult = installSpecKitCli({ runtimes, dryRun });
+    statuses.speckit = speckitResult.status;
+    details.speckit = speckitResult.detail;
+  }
+
+  if (selected.has("gsd") || selected.has("bmad")) {
+    const gsdResult = installGsdBmadCli({
+      runtimes,
+      location,
+      dryRun,
+    });
+    if (selected.has("gsd")) {
+      statuses.gsd = gsdResult.status;
+      details.gsd = gsdResult.detail;
+    }
+    if (selected.has("bmad")) {
+      statuses.bmad = gsdResult.status;
+      details.bmad = gsdResult.detail;
+    }
+  }
+
+  return {
+    statuses,
+    details,
+  };
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 /**
- * Runs the workspace setup wizard (packs, runtimes, install mode, prompts).
+ * Runs the workspace setup wizard (packs, runtimes, workflows, file sync).
  */
 export async function runSetupWizard(args) {
   const cwd = process.cwd();
   let force = args.includes("--force");
   const dryRun = args.includes("--dry-run");
   const autoYes = args.includes("--yes") || args.includes("-y");
-  const forcedInstallMode = parseInstallModeArg(args);
   const forcedConflictPolicy = parseConflictPolicyArg(args);
   const forcedSetupMode = parseSetupModeArg(args);
-  const forcedPromptMode = parsePromptInstallArg(args);
+  const forcedWorkflowInstallMode = parseWorkflowInstallArg(args);
+  const forcedWorkflows = parseWorkflowArgs(args);
   const forcedRuntimes = parseRuntimeArgs(args);
   const forcedPacks = parsePackArgs(args);
   const forcedLocation = parseLocationArg(args);
   const requestedLang = hasLanguageArg(args);
   const requestedPacks =
     args.includes("--packs") || args.some((a) => a.startsWith("--packs="));
-  const hasSymlinkFlag = args.includes("--symlink");
-  const hasLocalFilesFlag =
-    args.includes("--local-files") || args.includes("--copy");
 
   if (requestedLang) {
     console.error(
@@ -573,13 +620,6 @@ export async function runSetupWizard(args) {
       chalk.red(
         `\n  Invalid pack list. Use --packs ${getPackIds().join(",")} or --all-packs.\n`,
       ),
-    );
-    process.exit(1);
-  }
-
-  if (hasSymlinkFlag && hasLocalFilesFlag) {
-    console.error(
-      chalk.red("\n  Use either --symlink or --local-files, not both.\n"),
     );
     process.exit(1);
   }
@@ -629,19 +669,46 @@ export async function runSetupWizard(args) {
     console.log(chalk.dim("  Auto-confirm enabled (--yes)\n"));
   }
 
-  const toolDetectedRuntimes = installedTools
+  const detectedRuntimeIds = installedTools
     .map((tool) => TOOL_RUNTIME_MAP[tool.id])
     .filter((runtime) => Boolean(runtime) && Boolean(RUNTIMES[runtime]));
+  const selectableRuntimeIds = [...new Set(detectedRuntimeIds)];
+  const setupRuntimeIds = [
+    ...new Set(
+      Object.values(TOOL_RUNTIME_MAP).filter((runtime) => Boolean(RUNTIMES[runtime])),
+    ),
+  ];
+  const toolStatusByRuntime = new Map(
+    detectedTools
+      .map((tool) => {
+        const runtime = TOOL_RUNTIME_MAP[tool.id];
+        if (!runtime || !RUNTIMES[runtime]) return null;
+        return [runtime, tool];
+      })
+      .filter(Boolean),
+  );
 
   const savedSetupMode = getSavedSetupMode(cwd);
-  const detected = detectRuntimes();
-  const initialRuntimeSelection = [
-    ...new Set([
-      ...RECOMMENDED_RUNTIMES.filter((r) => RUNTIMES[r]),
-      ...toolDetectedRuntimes,
-      ...detected,
-    ]),
-  ];
+  const savedConfig = readJsonFile(path.join(cwd, ".vibe", "config.json"));
+  const savedRuntimeSelection = Array.isArray(savedConfig.selectedRuntimes)
+    ? savedConfig.selectedRuntimes.filter((item) =>
+        selectableRuntimeIds.includes(String(item)),
+      )
+    : [];
+  const savedWorkflowSelection = Array.isArray(savedConfig.selectedWorkflowCli)
+    ? savedConfig.selectedWorkflowCli.filter((item) =>
+        ["speckit", "gsd", "bmad"].includes(String(item)),
+      )
+    : [];
+  const recommendedRuntimeSelection = RECOMMENDED_RUNTIMES.filter((runtime) =>
+    selectableRuntimeIds.includes(runtime),
+  );
+  const initialRuntimeSelection =
+    savedRuntimeSelection.length > 0
+      ? savedRuntimeSelection
+      : recommendedRuntimeSelection.length > 0
+        ? recommendedRuntimeSelection
+        : selectableRuntimeIds;
 
   const packOptions = getPackIds().map((pack) => ({
     value: pack,
@@ -649,19 +716,34 @@ export async function runSetupWizard(args) {
     desc: PACKS[pack].note,
   }));
 
-  const runtimeOptions = Object.entries(RUNTIMES).map(([value, rt]) => ({
-    value,
-    label: RECOMMENDED_RUNTIMES.includes(value)
-      ? `${rt.label}  (recommended)`
-      : rt.label,
-    desc: rt.note,
-  }));
+  const runtimeOptions = setupRuntimeIds.map((value) => {
+    const rt = RUNTIMES[value];
+    const toolStatus = toolStatusByRuntime.get(value);
+    const detectNote = toolStatus?.installed
+      ? `detected: ${toolStatus.detectedCommand}`
+      : "not detected yet";
+    return {
+      value,
+      label: RECOMMENDED_RUNTIMES.includes(value)
+        ? `${rt.label}  (recommended)`
+        : rt.label,
+      desc: `${rt.note} · ${detectNote}`,
+    };
+  });
+
+  if (forcedRuntimes.length === 0 && runtimeOptions.length === 0) {
+    console.log(chalk.red("  No supported setup runtimes detected for interactive mode."));
+    console.log(chalk.yellow("  Use runtime flags explicitly (for example: --opencode)."));
+    console.log();
+    process.exit(1);
+  }
 
   let packs = forcedPacks.length > 0 ? [...forcedPacks] : [];
   const language = "en";
   let runtimes = forcedRuntimes.length > 0 ? [...forcedRuntimes] : [];
+  let workflows =
+    forcedWorkflows.length > 0 ? [...forcedWorkflows] : [...savedWorkflowSelection];
   let location = forcedLocation || null;
-  let installMode = forcedInstallMode || null;
   let conflictPolicy = forcedConflictPolicy || null;
   const setupMode = forcedSetupMode || savedSetupMode;
 
@@ -673,8 +755,10 @@ export async function runSetupWizard(args) {
         title: "Step 1/5 — Which command packs should be installed?",
         options: packOptions,
         initial: packs,
+        allowBack: true,
       });
 
+      if (selectedPacks === BACK_ACTION) return "back";
       if (selectedPacks.length === 0) {
         console.log(chalk.yellow("\n  Select at least one pack.\n"));
         return "stay";
@@ -688,7 +772,7 @@ export async function runSetupWizard(args) {
       if (forcedRuntimes.length > 0) return "next";
 
       const selectedRuntimes = await multiSelect({
-        title: "Step 2/5 — Which AI tools are you using?",
+        title: "Step 2/5 — Which AI tools should receive commands?",
         options: runtimeOptions,
         initial: runtimes.length > 0 ? runtimes : initialRuntimeSelection,
         allowBack: true,
@@ -705,10 +789,26 @@ export async function runSetupWizard(args) {
     },
 
     async () => {
+      if (forcedWorkflows.length > 0) return "next";
+
+      const selectedWorkflows = await multiSelect({
+        title: "Step 3/5 — Which workflow CLIs should be prepared?",
+        options: WORKFLOW_OPTIONS,
+        initial: workflows,
+        allowBack: true,
+      });
+
+      if (selectedWorkflows === BACK_ACTION) return "back";
+
+      workflows = selectedWorkflows;
+      return "next";
+    },
+
+    async () => {
       if (forcedLocation) return "next";
 
       const selectedLocation = await singleSelect({
-        title: "Step 3/5 — Install where?",
+        title: "Step 4/5 — Install where?",
         subtitle: "Local = current project only   |   Global = all projects",
         options: [
           {
@@ -732,34 +832,6 @@ export async function runSetupWizard(args) {
     },
 
     async () => {
-      if (forcedInstallMode) return "next";
-
-      const selectedInstallMode = await singleSelect({
-        title: "Step 4/5 — Install mode?",
-        subtitle:
-          "Symlink stores files once in .vibe/commands and links runtime folders",
-        options: [
-          {
-            value: "symlink",
-            label: "Symlink  (recommended)",
-            desc: "Cache once, runtime folders link to cached files",
-          },
-          {
-            value: "local",
-            label: "Local files",
-            desc: "Write full command files directly into each runtime folder",
-          },
-        ],
-        initial: installMode === "local" ? 1 : 0,
-        allowBack: true,
-      });
-
-      if (selectedInstallMode === BACK_ACTION) return "back";
-      installMode = selectedInstallMode;
-      return "next";
-    },
-
-    async () => {
       if (forcedConflictPolicy) return "next";
 
       const selectedConflictPolicy = await singleSelect({
@@ -769,7 +841,7 @@ export async function runSetupWizard(args) {
           {
             value: "keep",
             label: "Keep existing  (recommended)",
-            desc: "Do not overwrite existing files or links",
+            desc: "Do not overwrite existing files",
           },
           {
             value: "replace",
@@ -792,6 +864,9 @@ export async function runSetupWizard(args) {
     const action = await steps[stepIndex]();
 
     if (action === "back") {
+      if (stepIndex === 0) {
+        return BACK_ACTION;
+      }
       stepIndex = Math.max(0, stepIndex - 1);
       continue;
     }
@@ -814,43 +889,56 @@ export async function runSetupWizard(args) {
     runtimes,
     packs,
     location,
-    language,
     {
       force,
       dryRun,
-      installMode,
     },
   );
 
-  let shouldInstallPrompts = forcedPromptMode === "install";
-  if (forcedPromptMode === null) {
-    shouldInstallPrompts = await confirm(
-      "Install quick prompt library to .vibe/prompts?",
+  let shouldInstallWorkflows = forcedWorkflowInstallMode === "install";
+  if (forcedWorkflowInstallMode === null && workflows.length > 0) {
+    shouldInstallWorkflows = await confirm(
+      "Install selected workflow CLIs now (Spec-Kit/GSD/BMAD)?",
       true,
     );
   }
 
-  if (forcedPromptMode === "install") {
-    console.log(chalk.dim("  Prompt flag: install\n"));
-  } else if (forcedPromptMode === "skip") {
-    console.log(chalk.dim("  Prompt flag: skip\n"));
+  if (forcedWorkflowInstallMode === "install") {
+    console.log(chalk.dim("  Workflow install flag: install\n"));
+  } else if (forcedWorkflowInstallMode === "skip") {
+    console.log(chalk.dim("  Workflow install flag: skip\n"));
   }
 
-  const promptResults = shouldInstallPrompts
-    ? await installPrompts(cwd, location, language, {
-        force,
-        dryRun,
-      })
-    : {
-        installed: false,
-        root: getPromptRoot(cwd, location),
-        language,
-        created: 0,
-        skipped: 0,
-        failed: 0,
-      };
+  let workflowInstallResults = {
+    statuses: {
+      speckit: workflows.includes("speckit") ? "pending" : "not-selected",
+      gsd: workflows.includes("gsd") ? "pending" : "not-selected",
+      bmad: workflows.includes("bmad") ? "pending" : "not-selected",
+    },
+    details: {
+      speckit: "",
+      gsd: "",
+      bmad: "",
+    },
+  };
 
-  saveLanguageConfig(cwd, location, language, { dryRun, setupMode });
+  if (shouldInstallWorkflows && workflows.length > 0) {
+    printHeader("Installing Workflow CLIs");
+    workflowInstallResults = installWorkflowCliTooling({
+      workflows,
+      runtimes,
+      location,
+      dryRun,
+    });
+  }
+
+  saveLanguageConfig(cwd, location, language, {
+    dryRun,
+    setupMode,
+    runtimes,
+    workflows,
+  });
+  ensureSetupStateFile(cwd, { dryRun });
 
   // .gitignore
   if (!dryRun) {
@@ -859,10 +947,6 @@ export async function runSetupWizard(args) {
       const content = fs.readFileSync(gi, "utf8");
       const lines = [];
       if (!content.includes(".vibe/index.db")) lines.push(".vibe/index.db");
-      if (!content.includes(".vibe/commands")) lines.push(".vibe/commands");
-      if (promptResults.installed && !content.includes(".vibe/prompts")) {
-        lines.push(".vibe/prompts");
-      }
 
       if (lines.length > 0) {
         fs.appendFileSync(gi, `\n# vibe\n${lines.join("\n")}\n`);
@@ -871,49 +955,40 @@ export async function runSetupWizard(args) {
   }
 
   const packLabels = packs.map((pack) => PACKS[pack]?.label || pack).join(", ");
-  const startCommand = packs.includes("research")
-    ? "/research.setup"
-    : packs.includes("design")
-      ? "/design.setup"
-      : packs.includes("conversation")
-        ? "/conversation"
-      : "/resource.setup";
+  const startCommand = packs.includes("conversation")
+    ? "/conversation"
+    : "/setup.init";
 
   // ── Summary ───────────────────────────────────────────────────────────────
   const totalFail =
     cmdResults.commands.failed +
     cmdResults.references.failed +
-    cmdResults.links.failed +
-    promptResults.failed;
-  const cacheRoot = getCacheRoot(cwd, location).replace(os.homedir(), "~");
-  const promptRoot = promptResults.root.replace(os.homedir(), "~");
+    Object.values(workflowInstallResults.statuses).filter(
+      (status) => status === "failed",
+    ).length;
   const summaryLines = [
     totalFail
       ? "WARN  Vibe setup completed with errors"
       : "OK    Vibe setup complete!",
     "",
     `   Packs     ${packLabels}`,
-    `   Mode      ${INSTALL_MODE_LABELS[installMode]}`,
+    `   Mode      ${INSTALL_MODE_LABELS.local}`,
     `   Existing  ${conflictPolicy}`,
-    `   Resource  ${SETUP_MODE_LABELS[setupMode]}`,
+    `   Profile   ${SETUP_MODE_LABELS[setupMode]}`,
     `   Commands  ${cmdResults.commands.created} synced`,
     `   Refs      ${cmdResults.references.created} synced`,
-    installMode === "symlink"
-      ? `   Links     ${cmdResults.links.created} created`
-      : "   Links     n/a",
-    promptResults.installed
-      ? `   Prompts   ${promptResults.created} synced`
-      : "   Prompts   skipped",
-    `   Language  ${LANGUAGE_LABELS[language]}`,
+    `   Language  ${language}`,
     `   Location  ${location}`,
+    `   Workflows ${workflows.length > 0 ? workflows.join(", ") : "none"}`,
+    `   InstallWF  ${shouldInstallWorkflows ? "yes" : "no"}`,
   ];
 
-  if (installMode === "symlink") {
-    summaryLines.push(`   Cache     ${cacheRoot}`);
-  }
-
-  if (promptResults.installed) {
-    summaryLines.push(`   PromptDir ${promptRoot}`);
+  if (workflows.length > 0) {
+    summaryLines.push(
+      `   Speckit   ${workflowInstallResults.statuses.speckit}`,
+      `   GSD       ${workflowInstallResults.statuses.gsd}`,
+      `   BMAD      ${workflowInstallResults.statuses.bmad}`,
+    );
   }
 
   summaryLines.push(
@@ -929,6 +1004,8 @@ export async function runSetupWizard(args) {
     console.log(
       chalk.yellow(`\n  ⚠  ${totalFail} failed - run vibe update to retry\n`),
     );
+
+  return "done";
 }
 
 /**
@@ -943,11 +1020,17 @@ export async function runSetup(args = []) {
     return;
   }
 
+  const [subcmd, ...rest] = normalizedArgs;
+  if (subcmd === "status") {
+    await runSetupStatus(rest);
+    return;
+  }
+
   const hasFlags = normalizedArgs.some((arg) => String(arg).startsWith("--"));
-  const subcmd = normalizedArgs[0] || "";
+  const command = normalizedArgs[0] || "";
   const openMenu =
     normalizedArgs.includes("--menu") ||
-    (!hasFlags && (normalizedArgs.length === 0 || subcmd === "menu"));
+    (!hasFlags && (normalizedArgs.length === 0 || command === "menu"));
 
   if (openMenu) {
     const { runSetupCenter } = await import("./setup-center.command.js");
