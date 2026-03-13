@@ -2,7 +2,7 @@ import chalk from "chalk";
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { fetchMany } from "./fetch.js";
+import { fetchMany } from "../core/remote-fetch.js";
 import {
   getPackIds,
   getPackManifest,
@@ -10,9 +10,9 @@ import {
   PACKS,
   resolvePromptLanguage,
   RUNTIMES,
-} from "./registry.js";
-import { parsePackArgs } from "./pack-args.js";
-import { parseRuntimeArgs } from "./runtime-args.js";
+} from "../core/registry.js";
+import { parsePackArgs } from "../core/pack-flags.js";
+import { parseRuntimeArgs } from "../core/runtime-flags.js";
 import {
   BACK_ACTION,
   confirm,
@@ -22,7 +22,12 @@ import {
   printSummary,
   singleSelect,
   VIBE_ART,
-} from "./tui.js";
+} from "../core/tui.js";
+import { detectInstalledTools } from "../system/tools.js";
+
+// Setup command is split into two layers:
+// 1) runSetup() decides between Setup Center menu and direct install mode.
+// 2) runSetupWizard() performs the pack/runtime installation workflow.
 
 function expandHome(p) {
   return p?.startsWith("~") ? path.join(os.homedir(), p.slice(1)) : p;
@@ -109,6 +114,38 @@ const SETUP_MODE_LABELS = {
 
 const LANGUAGE_LABELS = {
   en: "English",
+};
+
+const SETUP_HELP = `
+Usage:
+  vibe setup
+  vibe setup --menu
+  vibe setup [install options]
+
+Setup Center:
+  vibe setup            Open interactive setup center (TUI)
+  vibe setup --menu     Force open setup center (TUI)
+
+Workspace setup options:
+  --resource --research --design --conversation
+  --packs resource,research,design,conversation
+  --all-packs
+  --opencode --claude --gemini --codex --cursor --windsurf --qwen --kirocli --continue
+  --all-runtimes
+  --symlink --local-files
+  --force --keep
+  --local --global
+  --prompts --no-prompts
+  --fastsetup --extra
+  --dry-run --yes
+`;
+
+const TOOL_RUNTIME_MAP = {
+  opencode: "opencode",
+  claude: "claude",
+  gemini: "gemini",
+  codex: "codex",
+  kirocli: "kirocli",
 };
 
 function hasLanguageArg(args) {
@@ -273,9 +310,9 @@ async function installCommands(
   const cacheRoot = getCacheRoot(cwd, location);
 
   const syncPackCache = async (manifest) => {
-    const packRoot = path.join(cacheRoot, manifest.id, language);
+    const packRoot = path.join(cacheRoot, manifest.id);
     const commandItems = manifest.commands.map((cmd) => ({
-      remote: `commands/${manifest.id}/${language}/${cmd}.md`,
+      remote: `commands/${manifest.id}/${cmd}.md`,
       local: path.join(packRoot, `${cmd}.md`),
     }));
     const commandResults = await fetchMany(commandItems, { force, dryRun });
@@ -287,7 +324,7 @@ async function installCommands(
     let referenceResults = [];
     if (manifest.referenceFiles.length > 0) {
       const referenceItems = manifest.referenceFiles.map((file) => ({
-        remote: `commands/${manifest.id}/${language}/${file}`,
+        remote: `commands/${manifest.id}/${file}`,
         local: path.join(packRoot, file),
       }));
       referenceResults = await fetchMany(referenceItems, {
@@ -391,7 +428,7 @@ async function installCommands(
         );
       } else {
         const commandItems = manifest.commands.map((cmd) => ({
-          remote: `commands/${manifest.id}/${language}/${cmd}.md`,
+          remote: `commands/${manifest.id}/${cmd}.md`,
           local: path.join(dir, `${cmd}.md`),
         }));
         const commandResults = await fetchMany(commandItems, { force, dryRun });
@@ -408,7 +445,7 @@ async function installCommands(
 
         if (manifest.referenceFiles.length > 0) {
           const referenceItems = manifest.referenceFiles.map((file) => ({
-            remote: `commands/${manifest.id}/${language}/${file}`,
+            remote: `commands/${manifest.id}/${file}`,
             local: path.join(dir, file),
           }));
           const referenceResults = await fetchMany(referenceItems, {
@@ -466,7 +503,7 @@ async function installPrompts(cwd, location, language, { force, dryRun }) {
   console.log();
 
   const items = manifest.files.map((file) => ({
-    remote: `prompts/${manifest.language}/${file}`,
+    remote: `prompts/${file}`,
     local: path.join(promptRoot, file),
   }));
 
@@ -500,10 +537,14 @@ async function installPrompts(cwd, location, language, { force, dryRun }) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-export async function runSetup(args) {
+/**
+ * Runs the workspace setup wizard (packs, runtimes, install mode, prompts).
+ */
+export async function runSetupWizard(args) {
   const cwd = process.cwd();
   let force = args.includes("--force");
   const dryRun = args.includes("--dry-run");
+  const autoYes = args.includes("--yes") || args.includes("-y");
   const forcedInstallMode = parseInstallModeArg(args);
   const forcedConflictPolicy = parseConflictPolicyArg(args);
   const forcedSetupMode = parseSetupModeArg(args);
@@ -548,19 +589,56 @@ export async function runSetup(args) {
     process.exit(1);
   }
 
+  const detectedTools = detectInstalledTools();
+  const installedTools = detectedTools.filter((tool) => tool.installed);
+
   process.stdout.write("\x1b[2J\x1b[H");
   console.log(VIBE_ART);
   console.log(chalk.dim(`  Project: ${chalk.white(cwd)}\n`));
-  if (!(await confirm("Ready to start?"))) {
+
+  printHeader("Detected AI Tools");
+  detectedTools.forEach((tool) => {
+    if (tool.installed) {
+      printStep(
+        tool.label,
+        "done",
+        `command: ${tool.detectedCommand} (${tool.detectedPath})`,
+      );
+      return;
+    }
+
+    printStep(tool.label, "skip", "not found in PATH");
+  });
+  console.log();
+
+  if (installedTools.length === 0) {
+    console.log(chalk.red("  No supported AI CLI tools detected."));
+    console.log(chalk.yellow("  Please install at least one tool before running vibe setup:"));
+    detectedTools.forEach((tool) => {
+      console.log(chalk.dim(`  - ${tool.label}: ${tool.installHint}`));
+    });
+    console.log();
+    process.exit(1);
+  }
+
+  if (!autoYes && !(await confirm("Ready to start?"))) {
     console.log("\n  Aborted.\n");
     process.exit(0);
   }
+  if (autoYes) {
+    console.log(chalk.dim("  Auto-confirm enabled (--yes)\n"));
+  }
+
+  const toolDetectedRuntimes = installedTools
+    .map((tool) => TOOL_RUNTIME_MAP[tool.id])
+    .filter((runtime) => Boolean(runtime) && Boolean(RUNTIMES[runtime]));
 
   const savedSetupMode = getSavedSetupMode(cwd);
   const detected = detectRuntimes();
   const initialRuntimeSelection = [
     ...new Set([
       ...RECOMMENDED_RUNTIMES.filter((r) => RUNTIMES[r]),
+      ...toolDetectedRuntimes,
       ...detected,
     ]),
   ];
@@ -797,6 +875,8 @@ export async function runSetup(args) {
     ? "/research.setup"
     : packs.includes("design")
       ? "/design.setup"
+      : packs.includes("conversation")
+        ? "/conversation"
       : "/resource.setup";
 
   // ── Summary ───────────────────────────────────────────────────────────────
@@ -808,7 +888,9 @@ export async function runSetup(args) {
   const cacheRoot = getCacheRoot(cwd, location).replace(os.homedir(), "~");
   const promptRoot = promptResults.root.replace(os.homedir(), "~");
   const summaryLines = [
-    totalFail ? "⚠  Setup done (with errors)" : "✅  Vibe setup complete!",
+    totalFail
+      ? "WARN  Vibe setup completed with errors"
+      : "OK    Vibe setup complete!",
     "",
     `   Packs     ${packLabels}`,
     `   Mode      ${INSTALL_MODE_LABELS[installMode]}`,
@@ -847,4 +929,31 @@ export async function runSetup(args) {
     console.log(
       chalk.yellow(`\n  ⚠  ${totalFail} failed - run vibe update to retry\n`),
     );
+}
+
+/**
+ * Entrypoint for `vibe setup`.
+ * - No flags: open Setup Center menu.
+ * - With install flags: execute setup wizard directly.
+ */
+export async function runSetup(args = []) {
+  const normalizedArgs = Array.isArray(args) ? args : [];
+  if (normalizedArgs.includes("--help") || normalizedArgs.includes("-h")) {
+    console.log(SETUP_HELP);
+    return;
+  }
+
+  const hasFlags = normalizedArgs.some((arg) => String(arg).startsWith("--"));
+  const subcmd = normalizedArgs[0] || "";
+  const openMenu =
+    normalizedArgs.includes("--menu") ||
+    (!hasFlags && (normalizedArgs.length === 0 || subcmd === "menu"));
+
+  if (openMenu) {
+    const { runSetupCenter } = await import("./setup-center.command.js");
+    await runSetupCenter(normalizedArgs);
+    return;
+  }
+
+  await runSetupWizard(normalizedArgs);
 }

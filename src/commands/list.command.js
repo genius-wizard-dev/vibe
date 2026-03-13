@@ -2,13 +2,16 @@ import chalk from "chalk";
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { getKnownManagedFiles, RUNTIMES } from "./registry.js";
-import { VIBE_ART, printHeader } from "./tui.js";
+import { getKnownManagedFiles, RUNTIMES } from "../core/registry.js";
+import { VIBE_ART, printHeader } from "../core/tui.js";
 
 function expandHome(p) {
   return p?.startsWith("~") ? path.join(os.homedir(), p.slice(1)) : p;
 }
 
+/**
+ * Displays installed command packs and current workspace state.
+ */
 export async function runList() {
   const cwd = process.cwd();
   const managedFiles = getKnownManagedFiles();
@@ -197,8 +200,11 @@ export async function runList() {
   }
 }
 
+/**
+ * Re-runs setup in force mode to refresh managed files from upstream.
+ */
 export async function runUpdate(args) {
   console.log(chalk.cyan("\n  🔄 Updating vibe commands from GitHub...\n"));
-  const { runSetup } = await import("./setup.js");
+  const { runSetup } = await import("./setup.command.js");
   await runSetup([...args, "--force"]);
 }

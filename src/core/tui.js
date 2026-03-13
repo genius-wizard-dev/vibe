@@ -1,5 +1,21 @@
 import chalk from "chalk";
+import fs from "fs";
+import path from "path";
 import readline from "readline";
+import { fileURLToPath } from "url";
+
+function getTuiVersion() {
+  try {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const pkgPath = path.join(here, "..", "..", "package.json");
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
+    return pkg.version || "0.0.0";
+  } catch {
+    return "0.0.0";
+  }
+}
+
+const TUI_VERSION = getTuiVersion();
 
 // ─── ASCII Art ────────────────────────────────────────────────────────────────
 
@@ -11,7 +27,7 @@ export const VIBE_ART =
 ╚██╗ ██╔╝██║██╔══██╗██╔══╝
  ╚████╔╝ ██║██████╔╝███████╗
   ╚═══╝  ╚═╝╚═════╝ ╚══════╝
-`) + chalk.dim("  AI vibe Bootstrap  v0.1.0\n");
+`) + chalk.dim(`  AI vibe Bootstrap  v${TUI_VERSION}\n`);
 
 export const BACK_ACTION = "__vibe_back__";
 

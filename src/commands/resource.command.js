@@ -2,7 +2,7 @@ import chalk from "chalk";
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { VIBE_ART, printHeader } from "./tui.js";
+import { VIBE_ART, printHeader } from "../core/tui.js";
 
 function shortenHome(input) {
   return input.replace(os.homedir(), "~");
@@ -226,6 +226,9 @@ async function runResourceStatus(args) {
   console.log();
 }
 
+/**
+ * Routes `vibe resource ...` subcommands.
+ */
 export async function runResource(args) {
   const [subcmd, ...rest] = args;
 

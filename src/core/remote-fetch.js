@@ -2,6 +2,11 @@ import fs from "fs";
 import path from "path";
 import { rawUrl } from "./registry.js";
 
+// Remote fetch helpers used by setup/install flows.
+
+/**
+ * Downloads a single managed file from the configured GitHub source.
+ */
 export async function fetchFile(
   remotePath,
   localDest,
@@ -32,6 +37,9 @@ export async function fetchFile(
   }
 }
 
+/**
+ * Fetches multiple remote files in parallel.
+ */
 export async function fetchMany(items, opts = {}) {
   const results = await Promise.all(
     items.map(({ remote, local }) => fetchFile(remote, local, opts)),

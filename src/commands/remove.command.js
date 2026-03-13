@@ -2,9 +2,9 @@ import chalk from "chalk";
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { getKnownManagedFiles, RUNTIMES } from "./registry.js";
-import { parseRuntimeArgs } from "./runtime-args.js";
-import { confirm, multiSelect, printHeader, printStep, VIBE_ART } from "./tui.js";
+import { getKnownManagedFiles, RUNTIMES } from "../core/registry.js";
+import { parseRuntimeArgs } from "../core/runtime-flags.js";
+import { confirm, printHeader, printStep, VIBE_ART } from "../core/tui.js";
 
 function expandHome(p) {
   return p?.startsWith("~") ? path.join(os.homedir(), p.slice(1)) : p;
@@ -65,6 +65,10 @@ function collectTargets(cwd, runtimes, scopes, managedFiles) {
   return targets;
 }
 
+/**
+ * Removes workspace-managed assets.
+ * Always handles `.vibe` first, then optionally removes managed runtime files.
+ */
 export async function runRemove(args) {
   const cwd = process.cwd();
   const managedFiles = getKnownManagedFiles();
@@ -74,56 +78,86 @@ export async function runRemove(args) {
   const scopes = parseScopes(args);
   const dryRun = args.includes("--dry-run");
   const yes = args.includes("--yes") || args.includes("-y");
+  const workspaceDir = path.join(cwd, ".vibe");
 
   process.stdout.write("\x1b[2J\x1b[H");
   console.log(VIBE_ART);
-  printHeader("Remove Command Files");
+  printHeader("Remove Vibe Workspace");
+
+  let workspaceStatus = "skip";
+  let workspaceDetail = "not found";
+
+  if (fs.existsSync(workspaceDir)) {
+    if (dryRun) {
+      workspaceStatus = "skip";
+      workspaceDetail = "dry-run";
+    } else {
+      try {
+        fs.rmSync(workspaceDir, { recursive: true, force: true });
+        workspaceStatus = "done";
+        workspaceDetail = "removed first";
+      } catch (err) {
+        workspaceStatus = "fail";
+        workspaceDetail = err.message;
+      }
+    }
+  }
+
+  printStep(".vibe", workspaceStatus, workspaceDetail);
 
   const targets = collectTargets(cwd, runtimes, scopes, managedFiles);
+  const totalFiles = targets.reduce((sum, target) => sum + target.files.length, 0);
+
+  printHeader("Managed Runtime Files");
+
   if (targets.length === 0) {
-    console.log(chalk.dim("  No managed command files found for selected filters.\n"));
+    console.log(chalk.dim("  No managed command files found for selected filters."));
+    printHeader("Result");
+    if (workspaceStatus === "fail") {
+      console.log(chalk.red("  Workspace removal failed."));
+    } else if (dryRun && workspaceDetail === "dry-run") {
+      console.log(chalk.cyan("  Would remove .vibe only.\n"));
+    } else if (workspaceStatus === "done") {
+      console.log(chalk.green("  Removed .vibe.\n"));
+    } else {
+      console.log(chalk.dim("  Nothing to remove.\n"));
+    }
     return;
   }
 
-  const options = targets.map((t) => {
-    const scopeLabel = t.scope === "global" ? "global" : "local";
-    return {
-      value: t.id,
-      label: `${RUNTIMES[t.runtime].label} (${scopeLabel})`,
-      desc: `${t.files.length} files  •  ${t.dir.replace(os.homedir(), "~")}`,
-    };
+  console.log(chalk.yellow("  Found managed files:"));
+  console.log(chalk.dim(`  Targets: ${targets.length}  •  Files: ${totalFiles}\n`));
+
+  targets.forEach((target) => {
+    const scopeLabel = target.scope === "global" ? "global" : "local";
+    console.log(
+      chalk.dim(
+        `  - ${RUNTIMES[target.runtime].label} (${scopeLabel})  ${target.files.length} files  •  ${target.dir.replace(os.homedir(), "~")}`,
+      ),
+    );
   });
 
-  const selectedIds = yes
-    ? options.map((o) => o.value)
-    : await multiSelect({
-        title: "Select targets to remove",
-        options,
-        initial: options.map((o) => o.value),
-      });
+  console.log();
 
-  if (selectedIds.length === 0) {
-    console.log(chalk.yellow("\n  Nothing selected. Aborted.\n"));
+  if (
+    !yes &&
+    !(await confirm("Delete all managed runtime files listed above?", false))
+  ) {
+    printHeader("Result");
+    if (workspaceStatus === "done") {
+      console.log(chalk.green("  Removed .vibe."));
+      console.log(chalk.yellow("  Kept managed runtime files.\n"));
+      return;
+    }
+    console.log(chalk.yellow("  Kept managed runtime files.\n"));
     return;
   }
 
-  const selectedTargets = targets.filter((t) => selectedIds.includes(t.id));
-  const totalFiles = selectedTargets.reduce((sum, t) => sum + t.files.length, 0);
-
-  printHeader("Warning");
-  console.log(chalk.yellow("  This will permanently delete selected managed command files."));
-  console.log(chalk.dim(`  Targets: ${selectedTargets.length}  •  Files: ${totalFiles}\n`));
-
-  if (!yes && !(await confirm("Continue removing selected files?", false))) {
-    console.log(chalk.yellow("\n  Aborted.\n"));
-    return;
-  }
-
-  printHeader(dryRun ? "Dry Run" : "Removing");
+  printHeader(dryRun ? "Dry Run" : "Removing Managed Files");
   let removed = 0;
   let failed = 0;
 
-  for (const target of selectedTargets) {
+  for (const target of targets) {
     console.log(chalk.dim(`\n  📁 [${RUNTIMES[target.runtime].label}] ${target.dir}`));
     for (const file of target.files) {
       const fullPath = path.join(target.dir, file);
@@ -165,8 +199,23 @@ export async function runRemove(args) {
 
   printHeader("Result");
   if (dryRun) {
-    console.log(chalk.cyan(`  Would remove ${totalFiles} files from ${selectedTargets.length} targets.\n`));
+    if (workspaceDetail === "dry-run") {
+      console.log(chalk.cyan("  Would remove .vibe."));
+    }
+    console.log(
+      chalk.cyan(
+        `  Would remove ${totalFiles} managed files from ${targets.length} targets.\n`,
+      ),
+    );
     return;
+  }
+
+  if (workspaceStatus === "done") {
+    console.log(chalk.green("  Workspace: .vibe removed"));
+  } else if (workspaceStatus === "fail") {
+    console.log(chalk.red(`  Workspace: failed (${workspaceDetail})`));
+  } else {
+    console.log(chalk.dim("  Workspace: .vibe not found"));
   }
 
   console.log(chalk.green(`  Removed: ${removed}`));

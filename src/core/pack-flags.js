@@ -1,9 +1,12 @@
 import { getPackIds } from "./registry.js";
 
+// Normalizes pack-related CLI flags into canonical pack IDs.
+
 const PACK_FLAG_MAP = {
   "--resource": "resource",
   "--research": "research",
   "--design": "design",
+  "--conversation": "conversation",
 };
 
 const ALL_PACK_FLAGS = ["--all-packs", "--all-flows"];
@@ -18,6 +21,9 @@ function parsePackList(value) {
     .filter((item) => getPackIds().includes(item));
 }
 
+/**
+ * Parses CLI args and returns selected pack IDs.
+ */
 export function parsePackArgs(args) {
   if (args.some((arg) => ALL_PACK_FLAGS.includes(arg))) {
     return getPackIds();

@@ -25,7 +25,7 @@ function normalizeRepo(value) {
 
 function readPackageConfig() {
   const here = path.dirname(fileURLToPath(import.meta.url));
-  const pkgPath = path.join(here, "..", "package.json");
+  const pkgPath = path.join(here, "..", "..", "package.json");
   if (!fs.existsSync(pkgPath)) return {};
 
   try {
@@ -66,6 +66,9 @@ export const GITHUB_BRANCH =
 
 export const RAW_BASE = `https://raw.githubusercontent.com/${GITHUB_REPO}/${GITHUB_BRANCH}`;
 
+/**
+ * Resolves a repository-relative file path to the raw GitHub URL.
+ */
 export function rawUrl(filePath) {
   return `${RAW_BASE}/${filePath}`;
 }
@@ -131,6 +134,14 @@ export const RUNTIMES = {
     label: "Qwen Code",
     localDir: ".qwen/commands",
     globalDir: "~/.qwen/commands",
+    prefix: "/",
+    verify: "/resource.setup",
+    note: "Commands use / prefix",
+  },
+  kirocli: {
+    label: "Kiro CLI",
+    localDir: ".kiro/commands",
+    globalDir: "~/.kiro/commands",
     prefix: "/",
     verify: "/resource.setup",
     note: "Commands use / prefix",
@@ -212,6 +223,14 @@ export const PACKS = {
     ],
     stateFile: ".vibe/design/<design>/state.md",
   },
+  conversation: {
+    label: "Conversation",
+    note: "Structured multi-agent meeting workflow with local sqlite persistence",
+    languages: ["en"],
+    commands: ["conversation"],
+    referenceFiles: [],
+    stateFile: ".vibe/data/conversations.db",
+  },
 };
 
 export const PROMPT_LIBRARY = {
@@ -238,6 +257,9 @@ export function resolvePromptLanguage(requestedLanguage = "en") {
   };
 }
 
+/**
+ * Returns prompt file manifest for the resolved language.
+ */
 export function getPromptFiles(language = "en") {
   const resolved = resolvePromptLanguage(language).language;
   return {
@@ -250,6 +272,9 @@ export function getPackIds() {
   return Object.keys(PACKS);
 }
 
+/**
+ * Builds install-ready metadata for selected packs.
+ */
 export function getPackManifest(selectedPacks = []) {
   return selectedPacks
     .filter((pack) => PACKS[pack])
@@ -265,6 +290,9 @@ export function getPackManifest(selectedPacks = []) {
     });
 }
 
+/**
+ * Returns the complete set of files managed by vibe packs.
+ */
 export function getKnownManagedFiles() {
   const files = new Set();
 

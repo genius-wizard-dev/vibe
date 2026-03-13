@@ -1,5 +1,7 @@
 import { RUNTIMES } from "./registry.js";
 
+// Normalizes runtime flags (including aliases) into runtime IDs.
+
 const RUNTIME_FLAG_ALIASES = {
   opencode: ["--open-code", "--opencode-cli"],
   claude: ["--claude-code"],
@@ -8,6 +10,7 @@ const RUNTIME_FLAG_ALIASES = {
   cursor: ["--cursor-ide"],
   windsurf: ["--windsurf-ide"],
   qwen: ["--qwen-code"],
+  kirocli: ["--kiro", "--kiro-cli"],
   continue: ["--continue-dev"],
 };
 
@@ -28,6 +31,9 @@ function buildRuntimeArgMap() {
 
 export const RUNTIME_ARG_MAP = Object.freeze(buildRuntimeArgMap());
 
+/**
+ * Parses CLI args and returns selected runtime IDs.
+ */
 export function parseRuntimeArgs(args) {
   if (args.some((arg) => ALL_RUNTIME_FLAGS.includes(arg))) {
     return Object.keys(RUNTIMES);
