@@ -2,7 +2,7 @@ import chalk from "chalk";
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { RUNTIMES } from "./registry.js";
+import { getKnownManagedFiles, RUNTIMES } from "./registry.js";
 import { parseRuntimeArgs } from "./runtime-args.js";
 import { confirm, multiSelect, printHeader, printStep, VIBE_ART } from "./tui.js";
 
@@ -20,7 +20,7 @@ function parseScopes(args) {
   return ["local", "global"];
 }
 
-function collectTargets(cwd, runtimes, scopes) {
+function collectTargets(cwd, runtimes, scopes, managedFiles) {
   const targets = [];
 
   for (const runtime of runtimes) {
@@ -38,13 +38,15 @@ function collectTargets(cwd, runtimes, scopes) {
 
       const rootFiles = fs
         .readdirSync(dir)
-        .filter((f) => f.startsWith("vibe.") && f.endsWith(".md"));
+        .filter((f) => f.endsWith(".md"))
+        .filter((f) => managedFiles.has(f));
       const referenceDir = path.join(dir, "reference");
       const referenceFiles = fs.existsSync(referenceDir)
         ? fs
             .readdirSync(referenceDir)
-            .filter((f) => f.startsWith("vibe.") && f.endsWith(".md"))
-            .map((f) => path.join("reference", f))
+            .filter((f) => f.endsWith(".md"))
+            .filter((f) => managedFiles.has(`reference/${f}`))
+            .map((f) => `reference/${f}`)
         : [];
       const files = [...rootFiles, ...referenceFiles];
       if (files.length === 0) continue;
@@ -65,6 +67,7 @@ function collectTargets(cwd, runtimes, scopes) {
 
 export async function runRemove(args) {
   const cwd = process.cwd();
+  const managedFiles = getKnownManagedFiles();
   const forcedRuntimes = parseRuntimeArgs(args);
   const runtimes =
     forcedRuntimes.length > 0 ? forcedRuntimes : Object.keys(RUNTIMES);
@@ -74,11 +77,11 @@ export async function runRemove(args) {
 
   process.stdout.write("\x1b[2J\x1b[H");
   console.log(VIBE_ART);
-  printHeader("Remove Vibe Commands");
+  printHeader("Remove Command Files");
 
-  const targets = collectTargets(cwd, runtimes, scopes);
+  const targets = collectTargets(cwd, runtimes, scopes, managedFiles);
   if (targets.length === 0) {
-    console.log(chalk.dim("  No vibe command files found for selected filters.\n"));
+    console.log(chalk.dim("  No managed command files found for selected filters.\n"));
     return;
   }
 
@@ -108,7 +111,7 @@ export async function runRemove(args) {
   const totalFiles = selectedTargets.reduce((sum, t) => sum + t.files.length, 0);
 
   printHeader("Warning");
-  console.log(chalk.yellow("  This will permanently delete selected vibe command files."));
+  console.log(chalk.yellow("  This will permanently delete selected managed command files."));
   console.log(chalk.dim(`  Targets: ${selectedTargets.length}  •  Files: ${totalFiles}\n`));
 
   if (!yes && !(await confirm("Continue removing selected files?", false))) {

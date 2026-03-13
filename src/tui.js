@@ -13,6 +13,12 @@ export const VIBE_ART =
   ╚═══╝  ╚═╝╚═════╝ ╚══════╝
 `) + chalk.dim("  AI vibe Bootstrap  v0.1.0\n");
 
+export const BACK_ACTION = "__vibe_back__";
+
+function isBackKey(key) {
+  return key === "b" || key === "B" || key === "\x1b[D";
+}
+
 // ─── Key handling ─────────────────────────────────────────────────────────────
 
 function getRawKey() {
@@ -34,6 +40,7 @@ export async function multiSelect({
   options,
   required = [],
   initial = [],
+  allowBack = false,
 }) {
   const selected = new Set([...required, ...initial]);
   let cursor = 0;
@@ -42,7 +49,10 @@ export async function multiSelect({
     process.stdout.write("\x1b[2J\x1b[H"); // clear
     console.log(VIBE_ART);
     console.log(chalk.bold(`  ${title}\n`));
-    console.log(chalk.dim("  [Space] toggle  [Enter] confirm  [↑↓] move\n"));
+    const controls = allowBack
+      ? "  [Space] toggle  [Enter] confirm  [↑↓] move  [B] back\n"
+      : "  [Space] toggle  [Enter] confirm  [↑↓] move\n";
+    console.log(chalk.dim(controls));
 
     options.forEach((opt, i) => {
       const isSelected = selected.has(opt.value);
@@ -78,6 +88,7 @@ export async function multiSelect({
     const key = await getRawKey();
 
     if (key === "\r" || key === "\n") break; // Enter
+    if (allowBack && isBackKey(key)) return BACK_ACTION;
     if (key === "\x1b[A" && cursor > 0) cursor--; // Up
     if (key === "\x1b[B" && cursor < options.length - 1) cursor++; // Down
     if (key === " ") {
@@ -96,7 +107,13 @@ export async function multiSelect({
 
 // ─── Single select (radio) ────────────────────────────────────────────────────
 
-export async function singleSelect({ title, options, subtitle = "", initial = 0 }) {
+export async function singleSelect({
+  title,
+  options,
+  subtitle = "",
+  initial = 0,
+  allowBack = false,
+}) {
   let cursor = Math.min(Math.max(initial, 0), Math.max(options.length - 1, 0));
 
   const render = () => {
@@ -104,7 +121,10 @@ export async function singleSelect({ title, options, subtitle = "", initial = 0 
     console.log(VIBE_ART);
     console.log(chalk.bold(`  ${title}\n`));
     if (subtitle) console.log(chalk.dim(`  ${subtitle}\n`));
-    console.log(chalk.dim("  [↑↓] move  [Enter] select\n"));
+    const controls = allowBack
+      ? "  [↑↓] move  [Enter] select  [B] back\n"
+      : "  [↑↓] move  [Enter] select\n";
+    console.log(chalk.dim(controls));
 
     options.forEach((opt, i) => {
       const isCursor = i === cursor;
@@ -122,6 +142,7 @@ export async function singleSelect({ title, options, subtitle = "", initial = 0 
   while (true) {
     const key = await getRawKey();
     if (key === "\r" || key === "\n") break;
+    if (allowBack && isBackKey(key)) return BACK_ACTION;
     if (key === "\x1b[A" && cursor > 0) cursor--;
     if (key === "\x1b[B" && cursor < options.length - 1) cursor++;
     if (key === "\x03") process.exit();

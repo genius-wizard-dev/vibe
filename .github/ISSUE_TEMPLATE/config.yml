@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: GitHub Discussions
+    url: https://github.com/genius-wizard-dev/vibe/discussions
+    about: Ask questions and discuss ideas with maintainers and community.
+  - name: Security Policy
+    url: https://github.com/genius-wizard-dev/vibe/security/policy
+    about: Report vulnerabilities using the private disclosure flow.

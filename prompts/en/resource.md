@@ -1,0 +1,22 @@
+# Resource Bootstrap Accelerator
+
+Use this prompt to prepare implementation context before coding.
+
+Input:
+
+- bootstrap goal: {{YOUR_REQUEST}}
+
+Rules:
+
+1. Require research and design overviews.
+2. Run/find skills before base scaffolding.
+3. Keep one canonical bridge file: `.vibe/resource/context/bridge.md`.
+4. Ensure `AGENTS.md` includes changelog update rule.
+5. Keep root `CHANGE_LOGS.md` synchronized.
+
+Deliverables:
+
+- selected workflow strategy (Spec-Kit/GSD/BMAD)
+- selected skills and install result
+- base blueprint
+- scaffold/refinement result

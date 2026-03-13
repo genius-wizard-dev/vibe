@@ -35,13 +35,23 @@ const HELP = `
     vibe setup --force   Re-download + overwrite existing files
     vibe setup --dry-run Preview without writing files
     vibe setup --offline Use embedded fallback (no network)
-    vibe remove          Remove installed vibe command files
+    vibe research ...    Research result and global listing
+    vibe design ...      Design result and global listing
+    vibe resource ...    Resource readiness and status checks
+    vibe remove          Remove installed managed command files
     vibe list            Show installed commands + state
     vibe update          Re-sync all files from GitHub
 
   Options:
     --opencode --claude --gemini --codex --cursor --windsurf --qwen --continue
     --all / --all-tools / --all-runtimes
+    --resource --research --design
+    --packs resource,research,design
+    --all-packs
+    --fastsetup / --extra
+    --prompts / --no-prompts
+    --symlink / --local-files
+    --force / --keep
     --local / --global
     --lang en|vi
     --yes (for non-interactive remove)
@@ -51,8 +61,22 @@ const HELP = `
     --cursor-ide --windsurf-ide --qwen-code --continue-dev
 
   After setup:
-    Open your AI tool and run /vibe.setup
-    Check progress anytime with /vibe.resume
+    Open your AI tool and run /research.setup
+    Continue with /design.setup and /resource.setup
+
+  Research CLI:
+    vibe research result .
+    vibe research result <project-root>
+    vibe research global
+
+  Design CLI:
+    vibe design result .
+    vibe design result <project-root>
+    vibe design global
+
+  Resource CLI:
+    vibe resource status .
+    vibe resource status <project-root>
 `;
 
 switch (cmd) {
@@ -79,6 +103,21 @@ switch (cmd) {
   case "update": {
     const { runUpdate } = await import("./list.js");
     await runUpdate(args);
+    break;
+  }
+  case "research": {
+    const { runResearch } = await import("./research.js");
+    await runResearch(args);
+    break;
+  }
+  case "design": {
+    const { runDesign } = await import("./design.js");
+    await runDesign(args);
+    break;
+  }
+  case "resource": {
+    const { runResource } = await import("./resource.js");
+    await runResource(args);
     break;
   }
   default:
