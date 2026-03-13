@@ -165,11 +165,11 @@ function printWorkspaceSetupRecommendationForConvo() {
   if (!status.initReady) {
     hints.push("run vibe setup");
   }
-  if (!status.hasResourceState) {
-    hints.push("run /resource.setup");
+  if (!status.hasSetupState) {
+    hints.push("run /setup.init");
   }
-  if (status.hasResourceState && !status.resourceReady) {
-    hints.push("complete /resource.findskills and /resource.base");
+  if (status.hasSetupState && !status.setupReady) {
+    hints.push("complete /setup.detect, /setup.install, and /setup.verify");
   }
 
   const suffix = hints.length > 0 ? ` (${hints.join("; ")})` : "";

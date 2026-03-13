@@ -1,11 +1,9 @@
 import chalk from "chalk";
 import inquirer from "inquirer";
-import readline from "readline";
 import { AGENT_RUNTIMES } from "../core/agent-registry.js";
 import { runAgents } from "./agents.command.js";
 import { runConvo } from "./conversation.command.js";
-import { runDesign } from "./design.command.js";
-import { runResource } from "./resource.command.js";
+import { runSetupStatus } from "./setup-status.command.js";
 import { runSetupWizard } from "./setup.command.js";
 import {
   BACK_ACTION,
@@ -16,6 +14,7 @@ import {
 } from "../core/tui.js";
 import { detectInstalledTools } from "../system/tools.js";
 import { getWorkspaceStatus } from "../system/workspace-status.js";
+import { evaluateWorkflowReadiness } from "../system/workflow-status.js";
 
 // Setup Center is a persistent TUI menu used to orchestrate
 // workspace setup, agent management, conversation management, and monitoring.
@@ -24,28 +23,46 @@ function clearScreen() {
   process.stdout.write("\x1b[2J\x1b[H");
 }
 
-async function waitForEnter(message = "Press Enter to go back") {
+async function waitForEnter(message = "Press Enter or B to go back") {
   if (!process.stdin.isTTY || typeof process.stdin.setRawMode !== "function") {
     return;
   }
 
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
+  process.stdout.write(`\n  ${chalk.dim(message)} `);
 
   await new Promise((resolve) => {
-    rl.question(`\n  ${chalk.dim(message)} `, () => {
-      rl.close();
-      resolve();
-    });
+    const onKeypress = (buf) => {
+      const key = buf.toString();
+      const normalized = key.toLowerCase();
+
+      if (key === "\x03") {
+        process.exit();
+      }
+
+      if (key === "\r" || key === "\n" || normalized === "b") {
+        process.stdin.off("data", onKeypress);
+        process.stdin.setRawMode(false);
+        process.stdin.pause();
+        console.log();
+        resolve();
+      }
+    };
+
+    process.stdin.setRawMode(true);
+    process.stdin.resume();
+    process.stdin.on("data", onKeypress);
   });
 }
 
-function buildMenuSuffix({ noTools = false, needWorkspace = false }) {
+function buildMenuSuffix({
+  noTools = false,
+  needWorkspace = false,
+  needWorkflow = false,
+}) {
   const tags = [];
   if (noTools) tags.push("no tools setup");
-  if (needWorkspace) tags.push("resource setup recommended");
+  if (needWorkspace) tags.push("setup init recommended");
+  if (needWorkflow) tags.push("workflow setup recommended");
   return tags.length > 0 ? ` ${chalk.dim(`(${tags.join(", ")})`)}` : "";
 }
 
@@ -68,11 +85,13 @@ function buildMainMenuOptions() {
   const noTools = installedTools.length === 0;
   const workspace = getWorkspaceStatus(process.cwd());
   const needWorkspace = !workspace.convoReady;
+  const needWorkflow = workspace.hasSetupState && !workspace.workflowReady;
 
   return {
     tools,
     noTools,
     needWorkspace,
+    needWorkflow,
     options: [
       {
         value: "tools",
@@ -81,7 +100,7 @@ function buildMainMenuOptions() {
       },
       {
         value: "workspace_setup",
-        label: `Setup workspace${buildMenuSuffix({ noTools })}`,
+        label: `Setup workspace${buildMenuSuffix({ noTools, needWorkflow })}`,
         desc: "Run vibe setup wizard",
         blocked: noTools,
       },
@@ -122,14 +141,8 @@ function buildMainMenuOptions() {
         blocked: noTools,
       },
       {
-        value: "design_list",
-        label: `Design list${buildMenuSuffix({ noTools })}`,
-        desc: "List local design topics",
-        blocked: noTools,
-      },
-      {
-        value: "resource_setup",
-        label: `Workspace resource setup${buildMenuSuffix({ noTools })}`,
+        value: "setup_status",
+        label: `Workspace setup status${buildMenuSuffix({ noTools, needWorkflow })}`,
         desc: "Check workspace readiness and next actions",
         blocked: noTools,
       },
@@ -145,6 +158,7 @@ function buildMainMenuOptions() {
 async function showToolSetupScreen(tools) {
   printSettingFrame();
   printHeader("AI Tool Setup");
+  const workflowStatus = evaluateWorkflowReadiness(process.cwd());
 
   const installed = tools.filter((tool) => tool.installed);
   tools.forEach((tool) => {
@@ -168,6 +182,28 @@ async function showToolSetupScreen(tools) {
   } else {
     console.log(chalk.green(`  Ready: ${installed.length} tools detected.`));
     console.log(chalk.dim("  You can continue with workspace setup and menu actions."));
+  }
+
+  printHeader("Workflow Tooling");
+  workflowStatus.checks.forEach((check) => {
+    const status = check.selected ? (check.ready ? "done" : "fail") : "skip";
+    printStep(check.label, status, check.detail);
+  });
+
+  console.log();
+  if (workflowStatus.missingSelected.length > 0) {
+    console.log(
+      chalk.yellow(
+        `  Missing selected workflows: ${workflowStatus.missingSelected.join(", ")}.`,
+      ),
+    );
+    console.log(
+      chalk.dim(
+        "  Run /setup.install to finish setup. Already-installed workflows are auto-skipped.",
+      ),
+    );
+  } else {
+    console.log(chalk.green("  Workflow tooling check passed for selected flows."));
   }
 
   await waitForEnter();
@@ -602,8 +638,10 @@ export async function runSetupCenter(args) {
       }
 
       if (selectedValue === "workspace_setup") {
-        await runSetupWizard(["--yes"]);
-        await waitForEnter();
+        const setupResult = await runSetupWizard(["--yes"]);
+        if (setupResult !== BACK_ACTION) {
+          await waitForEnter();
+        }
         continue;
       }
 
@@ -640,14 +678,8 @@ export async function runSetupCenter(args) {
         continue;
       }
 
-      if (selectedValue === "design_list") {
-        await runDesign(["result", "."]);
-        await waitForEnter();
-        continue;
-      }
-
-      if (selectedValue === "resource_setup") {
-        await runResource(["status", "."]);
+      if (selectedValue === "setup_status") {
+        await runSetupStatus(["."]);
         await waitForEnter();
       }
     } catch (error) {

@@ -1,20 +1,20 @@
 {
   "name": "ai-vibe",
-  "version": "0.2.6",
-  "description": "Bootstrap AI research, design, and resource packs with state management",
+  "version": "0.3.0",
+  "description": "Bootstrap AI setup and workflow tooling with resume-safe state management",
   "type": "module",
   "bin": {
     "vibe": "./src/index.js"
   },
   "scripts": {
-    "check:syntax": "node --check src/index.js && node --check src/commands/setup.command.js && node --check src/commands/setup-center.command.js && node --check src/commands/list.command.js && node --check src/commands/remove.command.js && node --check src/commands/research.command.js && node --check src/commands/design.command.js && node --check src/commands/resource.command.js && node --check src/commands/agents.command.js && node --check src/commands/conversation.command.js && node --check src/core/tui.js && node --check src/core/registry.js && node --check src/core/remote-fetch.js && node --check src/core/runtime-flags.js && node --check src/core/pack-flags.js && node --check src/core/agent-registry.js && node --check src/system/tools.js && node --check src/system/workspace-status.js && node --check src/conversation/cli.js && node --check src/conversation/contracts.js && node --check src/conversation/db.js && node --check src/conversation/migrate.js && node --check src/conversation/repo/conversations.repo.js && node --check src/conversation/repo/messages.repo.js && node --check src/conversation/repo/participants.repo.js && node --check src/conversation/repo/cursors.repo.js && node --check src/conversation/repo/workflows.repo.js && node --check src/conversation/service/conversation.service.js && node --check src/conversation/service/history.service.js && node --check src/conversation/service/agent-runner.service.js && node --check src/conversation/service/unread.service.js && node --check src/conversation/service/workflow.service.js && node --check src/conversation/service/mentions.service.js && node --check scripts/generate-release-notes.mjs",
+    "check:syntax": "node --check src/index.js && node --check src/commands/setup.command.js && node --check src/commands/setup-status.command.js && node --check src/commands/setup-center.command.js && node --check src/commands/list.command.js && node --check src/commands/remove.command.js && node --check src/commands/agents.command.js && node --check src/commands/conversation.command.js && node --check src/core/tui.js && node --check src/core/registry.js && node --check src/core/remote-fetch.js && node --check src/core/runtime-flags.js && node --check src/core/pack-flags.js && node --check src/core/agent-registry.js && node --check src/system/tools.js && node --check src/system/workspace-status.js && node --check src/system/workflow-status.js && node --check src/conversation/cli.js && node --check src/conversation/contracts.js && node --check src/conversation/db.js && node --check src/conversation/migrate.js && node --check src/conversation/repo/conversations.repo.js && node --check src/conversation/repo/messages.repo.js && node --check src/conversation/repo/participants.repo.js && node --check src/conversation/repo/cursors.repo.js && node --check src/conversation/repo/workflows.repo.js && node --check src/conversation/service/conversation.service.js && node --check src/conversation/service/history.service.js && node --check src/conversation/service/agent-runner.service.js && node --check src/conversation/service/unread.service.js && node --check src/conversation/service/workflow.service.js && node --check src/conversation/service/mentions.service.js && node --check scripts/generate-release-notes.mjs",
     "smoke:cli": "node src/index.js --help && node src/index.js --version",
     "ci": "npm run check:syntax && npm run smoke:cli && npm pack --dry-run"
   },
   "files": [
     "src",
     "README.md",
-    "CHANGES.LOG",
+    "CHANGE_LOGS.md",
     "LICENSE",
     "CONTRIBUTING.md",
     "CODE_OF_CONDUCT.md",
@@ -48,10 +48,8 @@
     "qwen",
     "continue",
     "state-management",
-    "research",
-    "design",
     "workflow",
-    "resource-bootstrap",
+    "sdd",
     "sqlite",
     "conversation",
     "multi-agent"

@@ -6,10 +6,36 @@ import { DEFAULT_BUSY_TIMEOUT_MS, DEFAULT_DB_PATH } from "./contracts.js";
 const require = createRequire(import.meta.url);
 let CachedDatabaseSync = null;
 
+function requireNodeSqlite() {
+  const originalEmitWarning = process.emitWarning;
+
+  process.emitWarning = (warning, ...args) => {
+    const warningType =
+      typeof args[0] === "string" ? args[0] : warning?.name || "";
+    const warningMessage =
+      typeof warning === "string" ? warning : warning?.message || "";
+
+    if (
+      warningType === "ExperimentalWarning" &&
+      /sqlite/i.test(warningMessage)
+    ) {
+      return;
+    }
+
+    return originalEmitWarning.call(process, warning, ...args);
+  };
+
+  try {
+    return require("node:sqlite");
+  } finally {
+    process.emitWarning = originalEmitWarning;
+  }
+}
+
 function getDatabaseSync() {
   if (!CachedDatabaseSync) {
     try {
-      ({ DatabaseSync: CachedDatabaseSync } = require("node:sqlite"));
+      ({ DatabaseSync: CachedDatabaseSync } = requireNodeSqlite());
     } catch (error) {
       throw new Error(
         "Conversation database requires Node.js 22+ (built-in module 'node:sqlite'). Upgrade Node.js and retry.",

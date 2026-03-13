@@ -101,64 +101,16 @@ export async function runList() {
       .map((parts) => ({ step: parts[1], status: parts[2] }));
   };
 
-  const printTopicSection = (label, rootDir, resumeCmd) => {
-    const overviewFile = path.join(rootDir, "overview.md");
-    const activeFile = path.join(rootDir, "active.md");
-    if (!fs.existsSync(overviewFile) && !fs.existsSync(activeFile)) return false;
-
-    console.log(
-      chalk.cyan(`  ${label}`) + chalk.dim(`  ${rootDir.replace(os.homedir(), "~")}`),
-    );
-
-    const active = fs.existsSync(activeFile)
-      ? fs.readFileSync(activeFile, "utf8").trim()
-      : "";
-    if (active) {
-      console.log(`    ${chalk.dim("active:")} ${chalk.white(active)}`);
-      const topicState = path.join(rootDir, active, "state.md");
-      if (fs.existsSync(topicState)) {
-        const content = fs.readFileSync(topicState, "utf8");
-        ["scan", "interview", "analyze", "discuss", "export", "arch", "mcp", "review"].forEach(
-          (key) => {
-            const match = content.match(new RegExp(`^${key}:\\s*(.+)$`, "m"));
-            if (!match) return;
-            const status = match[1].trim();
-            console.log(
-              `    ${normalizeIcon(status)}  ${chalk.dim(key)}  ${chalk.dim(status)}`,
-            );
-          },
-        );
-      }
-    }
-
-    if (fs.existsSync(overviewFile)) {
-      console.log(chalk.dim(`    overview: ${overviewFile.replace(os.homedir(), "~")}`));
-    }
-    console.log(chalk.dim(`    Continue with ${resumeCmd}`));
-    console.log();
-    return true;
-  };
-
   let printedAny = false;
-  printedAny = printTopicSection(
-    "Research",
-    path.join(cwd, ".vibe", "research"),
-    "/research.resume",
-  ) || printedAny;
-  printedAny = printTopicSection(
-    "Design",
-    path.join(cwd, ".vibe", "design"),
-    "/design.resume",
-  ) || printedAny;
 
-  const resourceState = path.join(cwd, ".vibe", "resource", "state.md");
-  if (fs.existsSync(resourceState)) {
+  const statePath = path.join(cwd, ".vibe", "state.md");
+  if (fs.existsSync(statePath)) {
     printedAny = true;
     console.log(
-      chalk.cyan("  Resource") +
-        chalk.dim(`  ${resourceState.replace(os.homedir(), "~")}`),
+      chalk.cyan("  Setup") +
+        chalk.dim(`  ${statePath.replace(os.homedir(), "~")}`),
     );
-    parseLegacyStepState(resourceState).forEach(({ step, status }) => {
+    parseLegacyStepState(statePath).forEach(({ step, status }) => {
       console.log(
         `    ${normalizeIcon(status)}  ${chalk.dim(step.toLowerCase())}  ${chalk.dim(String(status).replace(/[✅🔄⏸❌]/g, "").trim())}`,
       );
@@ -167,34 +119,13 @@ export async function runList() {
     if (fs.existsSync(changelog)) {
       console.log(chalk.dim(`    changelog: ${changelog.replace(os.homedir(), "~")}`));
     }
-    console.log(chalk.dim("    Continue with /resource.resume"));
-    console.log();
-  }
-
-  const promptDir = path.join(cwd, ".vibe", "prompts");
-  if (fs.existsSync(promptDir)) {
-    const promptFiles = fs
-      .readdirSync(promptDir)
-      .filter((file) => file.endsWith(".md"));
-
-    printedAny = true;
-    console.log(
-      chalk.cyan("  Prompt Library") +
-        chalk.dim(`  ${promptDir.replace(os.homedir(), "~")}`),
-    );
-    if (promptFiles.length === 0) {
-      console.log(chalk.dim("    no prompt files"));
-    } else {
-      promptFiles.forEach((file) => {
-        console.log(`    ${chalk.white("@" + file)}`);
-      });
-    }
+    console.log(chalk.dim("    Continue with /setup.resume"));
     console.log();
   }
 
   if (!printedAny) {
     console.log(
-      chalk.dim("  No state yet - run /research.setup, /design.setup, or /resource.setup"),
+      chalk.dim("  No state yet - run /setup.init"),
     );
     console.log();
   }
