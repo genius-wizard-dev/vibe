@@ -1,6 +1,6 @@
 {
   "name": "ai-vibe",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Bootstrap AI vibe coding stack — multi-tool commands and state management",
   "type": "module",
   "bin": {

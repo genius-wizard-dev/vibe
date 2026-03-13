@@ -170,6 +170,69 @@ export function printHeader(text) {
   console.log();
 }
 
+function isFullWidthCodePoint(codePoint) {
+  if (Number.isNaN(codePoint)) return false;
+
+  if (
+    codePoint >= 0x1100 &&
+    (codePoint <= 0x115f ||
+      codePoint === 0x2329 ||
+      codePoint === 0x232a ||
+      (0x2e80 <= codePoint && codePoint <= 0x3247 && codePoint !== 0x303f) ||
+      (0x3250 <= codePoint && codePoint <= 0x4dbf) ||
+      (0x4e00 <= codePoint && codePoint <= 0xa4c6) ||
+      (0xa960 <= codePoint && codePoint <= 0xa97c) ||
+      (0xac00 <= codePoint && codePoint <= 0xd7a3) ||
+      (0xf900 <= codePoint && codePoint <= 0xfaff) ||
+      (0xfe10 <= codePoint && codePoint <= 0xfe19) ||
+      (0xfe30 <= codePoint && codePoint <= 0xfe6b) ||
+      (0xff01 <= codePoint && codePoint <= 0xff60) ||
+      (0xffe0 <= codePoint && codePoint <= 0xffe6) ||
+      (0x1b000 <= codePoint && codePoint <= 0x1b001) ||
+      (0x1f200 <= codePoint && codePoint <= 0x1f251) ||
+      (0x20000 <= codePoint && codePoint <= 0x3fffd))
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+const COMBINING_MARK_REGEX = /\p{Mark}/u;
+const EMOJI_REGEX = /\p{Extended_Pictographic}/u;
+
+function getDisplayWidth(input) {
+  let width = 0;
+
+  for (const char of String(input ?? "")) {
+    const codePoint = char.codePointAt(0);
+    if (!codePoint) continue;
+
+    if (
+      codePoint <= 0x1f ||
+      (codePoint >= 0x7f && codePoint <= 0x9f) ||
+      codePoint === 0x200d ||
+      (codePoint >= 0xfe00 && codePoint <= 0xfe0f)
+    ) {
+      continue;
+    }
+
+    if (COMBINING_MARK_REGEX.test(char)) continue;
+
+    width +=
+      EMOJI_REGEX.test(char) || isFullWidthCodePoint(codePoint) ? 2 : 1;
+  }
+
+  return width;
+}
+
+function padDisplay(input, targetWidth) {
+  const text = String(input ?? "");
+  const displayWidth = getDisplayWidth(text);
+  if (displayWidth >= targetWidth) return text;
+  return text + " ".repeat(targetWidth - displayWidth);
+}
+
 export function printSummary(lines) {
   const contentWidth = 44;
   const frameWidth = contentWidth + 2;
@@ -177,7 +240,7 @@ export function printSummary(lines) {
   console.log();
   console.log(chalk.cyan("  ╔" + "═".repeat(frameWidth) + "╗"));
   lines.forEach((l) => {
-    const padded = String(l ?? "").padEnd(contentWidth);
+    const padded = padDisplay(l, contentWidth);
     console.log(chalk.cyan("  ║") + ` ${padded} ` + chalk.cyan("║"));
   });
   console.log(chalk.cyan("  ╚" + "═".repeat(frameWidth) + "╝"));

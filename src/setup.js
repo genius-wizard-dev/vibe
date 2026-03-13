@@ -341,7 +341,7 @@ export async function runSetup(args) {
   // ── Summary ───────────────────────────────────────────────────────────────
   const totalFail = cmdResults.commands.failed + cmdResults.references.failed;
   printSummary([
-    totalFail ? "⚠  Setup done (with errors)" : "✅  vibe setup complete!",
+    totalFail ? "⚠  Setup done (with errors)" : "✅  Vibe setup complete!",
     "",
     `   Commands  ${cmdResults.commands.created} installed`,
     `   Refs      ${cmdResults.references.created} synced`,
