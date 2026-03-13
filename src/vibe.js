@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// vibe — AI Vibe Coding bootstrap CLI
+// vibe — AI vibe bootstrap CLI
 // Commands fetched from GitHub at runtime — repo is auto-resolved
 
 const [, , cmd, ...args] = process.argv;
@@ -12,7 +12,7 @@ const HELP = `
    ╚████╔╝ ██║██████╔╝███████╗
     ╚═══╝  ╚═╝╚═════╝ ╚══════╝
 
-  AI Vibe Coding Bootstrap
+  AI vibe Bootstrap
 
   Usage:
     vibe setup           Interactive TUI setup wizard

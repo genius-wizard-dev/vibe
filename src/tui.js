@@ -11,7 +11,7 @@ export const VIBE_ART =
 ╚██╗ ██╔╝██║██╔══██╗██╔══╝
  ╚████╔╝ ██║██████╔╝███████╗
   ╚═══╝  ╚═╝╚═════╝ ╚══════╝
-`) + chalk.dim("  AI Vibe Coding Bootstrap  v0.1.0\n");
+`) + chalk.dim("  AI vibe Bootstrap  v0.1.0\n");
 
 // ─── Key handling ─────────────────────────────────────────────────────────────
 

@@ -59,7 +59,7 @@ export const GITHUB_REPO =
   normalizeRepo(pkg.vibe?.githubRepo) ||
   normalizeRepo(repositoryValue) ||
   readGitRemoteRepo(here) ||
-  "YOUR_USERNAME/vibe-coding";
+  "genius-wizard-dev/vibe";
 
 export const GITHUB_BRANCH =
   process.env.VIBE_GITHUB_BRANCH || pkg.vibe?.githubBranch || "main";

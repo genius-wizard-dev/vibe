@@ -96,11 +96,11 @@ function getSavedLanguage(cwd) {
   const local = readJsonFile(path.join(cwd, ".vibe", "config.json"));
   if (local.language === "en" || local.language === "vi") return local.language;
 
-  const global = readJsonFile(
-    path.join(os.homedir(), ".config", "vibe-coding", "config.json"),
+  const globalVibe = readJsonFile(
+    path.join(os.homedir(), ".config", "vibe", "config.json"),
   );
-  if (global.language === "en" || global.language === "vi") {
-    return global.language;
+  if (globalVibe.language === "en" || globalVibe.language === "vi") {
+    return globalVibe.language;
   }
 
   return "en";
@@ -116,7 +116,7 @@ function saveLanguageConfig(cwd, location, language, { dryRun }) {
   fs.writeFileSync(localFile, `${JSON.stringify(localConfig, null, 2)}\n`, "utf8");
 
   if (location === "global") {
-    const globalDir = path.join(os.homedir(), ".config", "vibe-coding");
+    const globalDir = path.join(os.homedir(), ".config", "vibe");
     const globalFile = path.join(globalDir, "config.json");
     fs.mkdirSync(globalDir, { recursive: true });
     const globalConfig = { ...readJsonFile(globalFile), language };
@@ -284,7 +284,7 @@ export async function runSetup(args) {
       fs.existsSync(gi) &&
       !fs.readFileSync(gi, "utf8").includes(".vibe/index.db")
     ) {
-      fs.appendFileSync(gi, "\n# vibe-coding\n.vibe/index.db\n");
+      fs.appendFileSync(gi, "\n# vibe\n.vibe/index.db\n");
     }
   }
 

@@ -1,4 +1,4 @@
-# vibe-coding
+# vibe
 
 ```text
 ██╗   ██╗██╗██████╗ ███████╗
@@ -7,17 +7,17 @@
 ╚██╗ ██╔╝██║██╔══██╗██╔══╝
  ╚████╔╝ ██║██████╔╝███████╗
   ╚═══╝  ╚═╝╚═════╝ ╚══════╝
-  AI Vibe Coding Bootstrap  v0.1.0
+  AI vibe Bootstrap  v0.1.0
 ```
 
-> Bootstrap AI Vibe Coding stack — opencode + codex + claude commands, state management.
+> Bootstrap AI vibe stack - opencode + codex + claude + gemini commands, state management.
 
 ```bash
-# npm registry
-npx vibe-coding setup
+# run directly from GitHub (recommended)
+npm exec --yes --package=github:genius-wizard-dev/vibe -- vibe setup
 
-# run directly from GitHub (no npm publish)
-npm exec --yes --package=github:YOUR_USERNAME/vibe-coding vibe setup
+# if published to npm
+npx vibe setup
 ```
 
 ---
@@ -35,7 +35,7 @@ CLI downloads command files **at runtime from GitHub** — no rebuild needed whe
 ## Repository Structure
 
 ```
-vibe-coding/
+vibe/
 ├── src/
 │   ├── vibe.js              ← CLI entry point
 │   ├── registry.js          ← All remote paths defined here
@@ -56,7 +56,7 @@ vibe-coding/
 
 ```bash
 # Interactive TUI setup (recommended)
-npx vibe-coding setup
+npm exec --yes --package=github:genius-wizard-dev/vibe -- vibe setup
 
 # Options
 vibe setup --force      # Re-download + overwrite
@@ -92,10 +92,11 @@ State is saved to `.vibe/state.md` — plain markdown, commit it. If you stop mi
 Just edit files in `command/` and push to `main`. No CLI rebuild needed.
 
 Users get updates via:
+
 ```bash
 vibe update
 # or
-npx vibe-coding@latest setup --force
+npm exec --yes --package=github:genius-wizard-dev/vibe -- vibe setup --force
 ```
 
 ---
@@ -105,10 +106,11 @@ npx vibe-coding@latest setup --force
 No registry edits needed for normal forks.
 
 `GITHUB_REPO` is auto-resolved in this order:
-1) `VIBE_GITHUB_REPO`
-2) `package.json` -> `vibe.githubRepo`
-3) `package.json` -> `repository.url`
-4) `git remote origin`
+
+1. `VIBE_GITHUB_REPO`
+2. `package.json` -> `vibe.githubRepo`
+3. `package.json` -> `repository.url`
+4. `git remote origin`
 
 Optional overrides:
 

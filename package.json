@@ -1,7 +1,7 @@
 {
-  "name": "vibe-coding",
+  "name": "vibe",
   "version": "0.1.0",
-  "description": "Bootstrap AI Vibe Coding stack — opencode + codex commands, state management",
+  "description": "Bootstrap AI vibe stack — opencode + codex commands, state management",
   "type": "module",
   "bin": {
     "vibe": "./src/vibe.js"
@@ -22,10 +22,10 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/YOUR_USERNAME/vibe-coding"
+    "url": "https://github.com/genius-wizard-dev/vibe.git"
   },
   "keywords": [
-    "vibe-coding",
+    "vibe",
     "setup",
     "AI",
     "opencode",
