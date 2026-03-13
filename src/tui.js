@@ -158,14 +158,35 @@ export async function confirm(message, defaultYes = true) {
   const hint = defaultYes ? "(Y/n)" : "(y/N)";
   process.stdout.write(`\n  ${chalk.bold(message)} ${chalk.dim(hint)} `);
 
+  if (!process.stdin.isTTY || typeof process.stdin.setRawMode !== "function") {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+
+    return new Promise((resolve) => {
+      rl.question("", (answer) => {
+        rl.close();
+        const key = answer.trim().toLowerCase();
+        if (!key) {
+          resolve(defaultYes);
+          return;
+        }
+        resolve(key === "y" || key === "yes");
+      });
+    });
+  }
+
   return new Promise((resolve) => {
     process.stdin.setRawMode(true);
+    process.stdin.resume();
     process.stdin.once("data", (buf) => {
       process.stdin.setRawMode(false);
+      process.stdin.pause();
       const key = buf.toString().toLowerCase();
       console.log();
       if (key === "\x03") process.exit();
-      resolve(key === "y" || (defaultYes && key === "\r"));
+      resolve(key === "y" || (defaultYes && (key === "\r" || key === "\n")));
     });
   });
 }
