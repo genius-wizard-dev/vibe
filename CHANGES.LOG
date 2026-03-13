@@ -1,0 +1,28 @@
+# CHANGES.LOG
+
+## Status
+- Last updated: 2026-03-14
+- Scope: recent shipped commits + current uncommitted working changes
+
+## Unreleased (working tree)
+- feat(setup): consolidate flow under `vibe setup` (menu + wizard), remove `vibe setting`, and deprecate `vibe init` in favor of `vibe setup`.
+- feat(setup): add AI tool preflight scan (OpenCode, Claude, Gemini, Codex, Kiro) and explicit setup-state hints inside Setup Center.
+- feat(agents): support batch sub-agent creation via `vibe agents create-many` and Setup Center action for fast team bootstrap.
+- feat(conversation): add `vibe convo list`/`--active-only` and `vibe convo monitor` for realtime observation with optional join-as-watcher.
+- ux(conversation): remove hard dependency on resource initialization; convo commands now run with a non-blocking workspace recommendation.
+- feat(commands): add `commands/conversation/conversation.md` as a structured multi-agent meeting guide command.
+- refactor(content): flatten language paths from `commands/*/en/*` and `prompts/en/*` into canonical package roots.
+- docs(prompts): strengthen research/design/resource prompt guidance around clarification-first interaction and refine-only base strategy.
+- chore(ci): standardize CI/release runtime to Node 22 and ignore local workspace/runtime generated folders.
+- refactor(src): reorganize source into domain folders (`src/commands/*`, `src/core/*`, `src/system/*`) and update module naming/import paths.
+- docs: refresh README/CONTRIBUTING structure references and roadmap notes for setup center + non-blocking convo behavior.
+
+## Recent commit history
+- 2026-03-14 a53321a chore(ci): align workflows with node 22 baseline
+- 2026-03-14 72b1d75 refactor(content): flatten command and prompt locale paths
+- 2026-03-14 5a191cb feat(commands): add conversation workflow guide command
+- 2026-03-14 1c4d94b docs(changes): record setup, convo, and src refactor updates
+- 2026-03-14 6a1a5fe docs: align contributor and setup docs with new cli layout
+- 2026-03-14 52b85e1 refactor(src): reorganize cli modules into command/core domains
+- 2026-03-13 47b8dbc Fix/tui (#4)
+- 2026-03-13 47cc8ea fix: enhance confirm prompt to handle non-TTY input and improve key (#3)

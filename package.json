@@ -1,19 +1,20 @@
 {
   "name": "ai-vibe",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "Bootstrap AI research, design, and resource packs with state management",
   "type": "module",
   "bin": {
     "vibe": "./src/index.js"
   },
   "scripts": {
-    "check:syntax": "node --check src/index.js && node --check src/setup.js && node --check src/tui.js && node --check src/registry.js && node --check src/fetch.js && node --check src/list.js && node --check src/remove.js && node --check src/runtime-args.js && node --check src/pack-args.js && node --check src/research.js && node --check src/design.js && node --check src/resource.js && node --check scripts/generate-release-notes.mjs",
+    "check:syntax": "node --check src/index.js && node --check src/commands/setup.command.js && node --check src/commands/setup-center.command.js && node --check src/commands/list.command.js && node --check src/commands/remove.command.js && node --check src/commands/research.command.js && node --check src/commands/design.command.js && node --check src/commands/resource.command.js && node --check src/commands/agents.command.js && node --check src/commands/conversation.command.js && node --check src/core/tui.js && node --check src/core/registry.js && node --check src/core/remote-fetch.js && node --check src/core/runtime-flags.js && node --check src/core/pack-flags.js && node --check src/core/agent-registry.js && node --check src/system/tools.js && node --check src/system/workspace-status.js && node --check src/conversation/cli.js && node --check src/conversation/contracts.js && node --check src/conversation/db.js && node --check src/conversation/migrate.js && node --check src/conversation/repo/conversations.repo.js && node --check src/conversation/repo/messages.repo.js && node --check src/conversation/repo/participants.repo.js && node --check src/conversation/repo/cursors.repo.js && node --check src/conversation/repo/workflows.repo.js && node --check src/conversation/service/conversation.service.js && node --check src/conversation/service/history.service.js && node --check src/conversation/service/agent-runner.service.js && node --check src/conversation/service/unread.service.js && node --check src/conversation/service/workflow.service.js && node --check src/conversation/service/mentions.service.js && node --check scripts/generate-release-notes.mjs",
     "smoke:cli": "node src/index.js --help && node src/index.js --version",
     "ci": "npm run check:syntax && npm run smoke:cli && npm pack --dry-run"
   },
   "files": [
     "src",
     "README.md",
+    "CHANGES.LOG",
     "LICENSE",
     "CONTRIBUTING.md",
     "CODE_OF_CONDUCT.md",
@@ -23,11 +24,11 @@
   "dependencies": {
     "chalk": "^5.3.0",
     "inquirer": "^9.2.0",
-    "ora": "^8.0.1",
-    "node-fetch": "^3.3.2"
+    "node-fetch": "^3.3.2",
+    "ora": "^8.0.1"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "license": "MIT",
   "repository": {
@@ -50,6 +51,12 @@
     "research",
     "design",
     "workflow",
-    "resource-bootstrap"
-  ]
+    "resource-bootstrap",
+    "sqlite",
+    "conversation",
+    "multi-agent"
+  ],
+  "devDependencies": {
+    "jest": "^30.3.0"
+  }
 }
